@@ -13,8 +13,10 @@ import (
 
 	"github.com/Aolakije/City-Buzz/internal/auth"
 	"github.com/Aolakije/City-Buzz/internal/middleware"
+	"github.com/Aolakije/City-Buzz/internal/post"
 	"github.com/Aolakije/City-Buzz/pkg/config"
 	"github.com/Aolakije/City-Buzz/pkg/database"
+
 )
 
 func main() {
@@ -72,6 +74,11 @@ func main() {
 	authService := auth.NewService(authRepo, cfg)
 	authHandler := auth.NewHandler(authService, cfg)
 
+	//Initialize post module
+	postRepo := post.NewRepository(db)
+	postService := post.NewService(postRepo)
+	postHandler := post.NewHandler(postService)
+
 	// Health check
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
@@ -92,6 +99,22 @@ func main() {
 	// User routes (protected)
 	userRoutes := api.Group("/users", middleware.AuthMiddleware(cfg))
 	userRoutes.Get("/me", authHandler.GetMe)
+
+	// Post routes (protected)
+	postRoutes := api.Group("/posts", middleware.AuthMiddleware(cfg))
+	postRoutes.Post("/", postHandler.CreatePost)
+	postRoutes.Get("/", postHandler.GetFeed)
+	postRoutes.Get("/:id", postHandler.GetPost)
+	postRoutes.Put("/:id", postHandler.UpdatePost)
+	postRoutes.Delete("/:id", postHandler.DeletePost)
+	postRoutes.Post("/:id/like", postHandler.LikePost)
+	postRoutes.Delete("/:id/like", postHandler.UnlikePost)
+	postRoutes.Post("/:id/comments", postHandler.CreateComment)
+	postRoutes.Get("/:id/comments", postHandler.GetComments)
+
+	// Comment routes (protected)
+	commentRoutes := api.Group("/comments", middleware.AuthMiddleware(cfg))
+	commentRoutes.Delete("/:id", postHandler.DeleteComment)
 
 	// Start server
 	port := cfg.Server.Port
