@@ -1,0 +1,131 @@
+{
+  "common": {
+    "appName": "City Buzz",
+    "loading": "Chargement...",
+    "error": "Une erreur s'est produite",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "submit": "Soumettre",
+    "search": "Rechercher",
+    "seeMore": "Voir plus",
+    "seeLess": "Voir moins",
+    "back": "Retour"
+  },
+  "auth": {
+    "login": "Connexion",
+    "logout": "Déconnexion",
+    "register": "S'inscrire",
+    "email": "Adresse e-mail",
+    "password": "Mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "username": "Nom d'utilisateur",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "forgotPassword": "Mot de passe oublié ?",
+    "noAccount": "Pas encore de compte ?",
+    "hasAccount": "Déjà un compte ?",
+    "loginSuccess": "Connexion réussie !",
+    "registerSuccess": "Inscription réussie !",
+    "invalidCredentials": "E-mail ou mot de passe invalide",
+    "emailTaken": "Cet e-mail est déjà utilisé",
+    "usernameTaken": "Ce nom d'utilisateur est déjà pris"
+  },
+  "nav": {
+    "home": "Accueil",
+    "events": "Événements",
+    "news": "Actualités",
+    "chat": "Messages",
+    "profile": "Profil",
+    "settings": "Paramètres"
+  },
+  "feed": {
+    "title": "Fil d'actualité",
+    "createPost": "Créer une publication",
+    "whatsOnYourMind": "Qu'avez-vous en tête ?",
+    "post": "Publier",
+    "like": "J'aime",
+    "comment": "Commenter",
+    "share": "Partager",
+    "comments": "Commentaires",
+    "noComments": "Aucun commentaire",
+    "writeComment": "Écrire un commentaire...",
+    "noPosts": "Aucune publication pour le moment",
+    "followPeople": "Suivez des personnes pour voir leurs publications"
+  },
+  "profile": {
+    "followers": "Abonnés",
+    "following": "Abonnements",
+    "posts": "Publications",
+    "follow": "Suivre",
+    "unfollow": "Ne plus suivre",
+    "editProfile": "Modifier le profil",
+    "bio": "Bio",
+    "joined": "Membre depuis"
+  },
+  "events": {
+    "title": "Événements à Rouen",
+    "upcoming": "À venir",
+    "today": "Aujourd'hui",
+    "thisWeek": "Cette semaine",
+    "thisMonth": "Ce mois",
+    "concerts": "Concerts",
+    "culture": "Culture",
+    "sports": "Sports",
+    "festivals": "Festivals",
+    "rsvp": "Participer",
+    "attending": "Vous participez",
+    "interested": "Intéressé",
+    "noEvents": "Aucun événement trouvé"
+  },
+  "news": {
+    "title": "Actualités locales",
+    "breakingNews": "Dernière minute",
+    "readMore": "Lire la suite",
+    "publishedAt": "Publié le",
+    "source": "Source"
+  },
+  "weather": {
+    "title": "Météo à Rouen",
+    "today": "Aujourd'hui",
+    "temperature": "Température",
+    "humidity": "Humidité",
+    "wind": "Vent",
+    "forecast": "Prévisions"
+  },
+  "traffic": {
+    "title": "Trafic",
+    "normal": "Fluide",
+    "slow": "Ralenti",
+    "heavy": "Dense",
+    "incidents": "Incidents"
+  },
+  "chat": {
+    "title": "Messages",
+    "newMessage": "Nouveau message",
+    "typeMessage": "Écrivez un message...",
+    "send": "Envoyer",
+    "online": "En ligne",
+    "offline": "Hors ligne",
+    "noConversations": "Aucune conversation"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "language": "Langue",
+    "notifications": "Notifications",
+    "privacy": "Confidentialité",
+    "theme": "Thème",
+    "darkMode": "Mode sombre",
+    "lightMode": "Mode clair"
+  },
+  "errors": {
+    "required": "Ce champ est obligatoire",
+    "invalidEmail": "Adresse e-mail invalide",
+    "passwordMin": "Le mot de passe doit contenir au moins 8 caractères",
+    "passwordMatch": "Les mots de passe ne correspondent pas",
+    "usernameMin": "Le nom d'utilisateur doit contenir au moins 3 caractères",
+    "networkError": "Erreur de connexion. Veuillez réessayer.",
+    "serverError": "Erreur serveur. Veuillez réessayer plus tard."
+  }
+}
