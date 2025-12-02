@@ -49,22 +49,22 @@ export default function Home() {
       setLoading(false);
     }
   };
-
-  const handleCreatePost = async () => {
+    const handleCreatePost = async () => {
     if (!newPostContent.trim()) return;
 
     try {
-      setCreatingPost(true);
-      const response = await postService.createPost({ content: newPostContent });
-      setPosts([response.data, ...posts]);
-      setNewPostContent('');
+        setCreatingPost(true);
+        const newPost = await postService.createPost(newPostContent); // string only
+        setPosts([newPost, ...posts]); // prepend the new post correctly
+        setNewPostContent('');
     } catch (err) {
-      setError('Failed to create post');
-      console.error('Error creating post:', err);
+        setError('Failed to create post');
+        console.error('Error creating post:', err);
     } finally {
-      setCreatingPost(false);
+        setCreatingPost(false);
     }
-  };
+    };
+
 
   const handleLikePost = async (postId) => {
     try {
@@ -220,15 +220,15 @@ export default function Home() {
 
           {/* Posts */}
           {!loading && posts.map((post) => {
-            const isLong = post.content && post.content.length > 150;
-            const isExpanded = expandedPosts[post.id];
+            const isLong = post?.content?.length > 150;
+            const isExpanded = expandedPosts[post?.id];
             const displayContent = isLong && !isExpanded 
-              ? post.content.substring(0, 150) + '...' 
-              : post.content;
+                 ? post.content.substring(0, 150) + '...' 
+                 : post?.content;
 
             return (
               <div
-                key={post.id}
+                key={post?.id}
                 style={{
                   backgroundColor: theme.bgCard,
                   borderRadius: '12px',
@@ -371,7 +371,6 @@ export default function Home() {
               padding: '60px 20px',
               color: theme.textSecondary
             }}>
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}>📝</div>
               <div style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px', color: theme.text }}>
                 {i18n.language === 'fr' ? 'Aucune publication' : 'No posts yet'}
               </div>

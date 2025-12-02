@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { Suspense, lazy } from "react";
 import useAuthStore from "./store/authStore";
 import ProtectedRoute from "./utils/ProtectedRoute";
@@ -14,7 +14,6 @@ function GuestRoute({ children }) {
 
 function App() {
   return (
-    <Router>
       <Suspense fallback={<p>Loading...</p>}>
         <Routes>
           {/* Homepage ALWAYS visible */}
@@ -47,7 +46,6 @@ function App() {
           <Route path="/*" element={<Navigate to="/home" replace />} />
         </Routes>
       </Suspense>
-    </Router>
   );
 }
 

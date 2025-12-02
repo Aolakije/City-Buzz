@@ -117,8 +117,6 @@ export default function AuthPage() {
       if (!response.ok) {
         throw new Error(data.error || 'Login failed');
       }
-
-      setSuccess('Login successful! Redirecting...');
       // Store token if returned
       if (data.token) {
         localStorage.setItem('token', data.token);
@@ -127,7 +125,7 @@ export default function AuthPage() {
       // Redirect to main app after 1 second
       setTimeout(() => {
         window.location.href = '/dashboard';
-      }, 1000);
+      },);
 
     } catch (err) {
       setError(err.message);
@@ -176,12 +174,11 @@ export default function AuthPage() {
       }
 
       setSuccess('Account created successfully! Please login.');
-      // Switch to login tab after 2 seconds
       setTimeout(() => {
         setIsLogin(true);
         setError('');
         setSuccess('');
-      }, 2000);
+      }, );
 
     } catch (err) {
       setError(err.message);
@@ -266,9 +263,9 @@ export default function AuthPage() {
         zIndex: 1
       }}>
         <h1 style={{
-          fontSize: '56px',
+          fontSize: '76px',
           fontWeight: 'bold',
-          marginBottom: '20px',
+          marginBottom: 'none',
           color: isDark ? colors.accent : colors.primary,
           textShadow: isDark 
             ? `0 0 30px ${colors.accent}40` 
@@ -276,6 +273,18 @@ export default function AuthPage() {
         }}>
           City-Buzz
         </h1>
+        <h3 style={{
+          fontSize: '44px',
+          fontWeight: '500',
+          marginBottom: '5px',
+          marginTop: '-8px',
+          color: isDark ? colors.accent : colors.primary,
+          textShadow: isDark 
+            ? `0 0 30px ${colors.accent}40` 
+            : 'none'
+        }}>
+        L'effervescence de la ville
+        </h3>
         <p style={{
           fontSize: '18px',
           textAlign: 'center',

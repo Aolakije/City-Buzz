@@ -158,100 +158,6 @@ export default function Layout({ children }) {
           </button>
         ))}
       </div>
-      
-      {/* Bottom Section - Settings & Sign Out */}
-      <div style={{ borderTop: `1px solid ${theme.border}`, paddingTop: '12px' }}>
-        {/* Settings */}
-        <button
-          onClick={() => {
-            navigate('/settings');
-            setMobileMenuOpen(false);
-          }}
-          style={{
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '14px',
-            padding: '12px 14px',
-            marginBottom: '4px',
-            backgroundColor: currentPath === '/settings' ? theme.bgActive : 'transparent',
-            border: 'none',
-            borderRadius: '10px',
-            cursor: 'pointer',
-            transition: 'background-color 0.2s ease',
-            borderLeft: currentPath === '/settings' ? `3px solid ${colors.accent}` : '3px solid transparent'
-          }}
-          onMouseOver={(e) => {
-            if (currentPath !== '/settings') e.currentTarget.style.backgroundColor = theme.bgHover;
-          }}
-          onMouseOut={(e) => {
-            if (currentPath !== '/settings') e.currentTarget.style.backgroundColor = 'transparent';
-          }}
-        >
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke={currentPath === '/settings' ? colors.accent : theme.iconColor}
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="12" cy="12" r="3" />
-            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
-          </svg>
-          <span style={{
-            fontSize: '15px',
-            fontWeight: currentPath === '/settings' ? '600' : '500',
-            color: currentPath === '/settings' ? colors.accent : theme.text
-          }}>
-            {t.settings}
-          </span>
-        </button>
-        
-        {/* Sign Out */}
-        <button
-          onClick={handleLogout}
-          style={{
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '14px',
-            padding: '12px 14px',
-            backgroundColor: 'transparent',
-            border: 'none',
-            borderRadius: '10px',
-            cursor: 'pointer',
-            transition: 'background-color 0.2s ease',
-            borderLeft: '3px solid transparent'
-          }}
-          onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(231, 76, 60, 0.1)'}
-          onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-        >
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#e74c3c"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
-            <polyline points="16 17 21 12 16 7" />
-            <line x1="21" y1="12" x2="9" y2="12" />
-          </svg>
-          <span style={{
-            fontSize: '15px',
-            fontWeight: '500',
-            color: '#e74c3c'
-          }}>
-            {t.signout}
-          </span>
-        </button>
-      </div>
     </nav>
   );
 
@@ -377,13 +283,12 @@ export default function Layout({ children }) {
             transform: 'translateX(-50%)',
             fontSize: '24px',
             fontWeight: 'bold',
-            background: `linear-gradient(135deg, ${colors.accent} 0%, #fff 100%)`,
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
+          color: isDark ? colors.accent : colors.primary,
+          textShadow: isDark 
+            ? `0 0 30px ${colors.accent}40` 
+            : 'none',
             cursor: 'pointer'
-          }}
-        >
+        }}>
           City-Buzz
         </div>
         
