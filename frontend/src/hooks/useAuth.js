@@ -1,36 +1,17 @@
-import { useEffect } from 'react';
 import useAuthStore from '../store/authStore';
 
 export const useAuth = () => {
-  const { 
-    user, 
-    isAuthenticated, 
-    isLoading, 
-    error,
-    login,
-    register,
-    logout,
-    getCurrentUser,
-    clearError
-  } = useAuthStore();
-
-  // Check authentication on mount
-  useEffect(() => {
-    if (!isAuthenticated && !isLoading) {
-      getCurrentUser().catch(() => {
-        // User not authenticated, do nothing
-      });
-    }
-  }, []);
+  const store = useAuthStore();
 
   return {
-    user,
-    isAuthenticated,
-    isLoading,
-    error,
-    login,
-    register,
-    logout,
-    clearError,
+    user: store.user,
+    isAuthenticated: store.isAuthenticated,
+    isLoading: store.isLoading,
+    hasCheckedAuth: store.hasCheckedAuth,
+    error: store.error,
+    login: store.login,
+    register: store.register,
+    logout: store.logout,
+    clearError: store.clearError
   };
 };

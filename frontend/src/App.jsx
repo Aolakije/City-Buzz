@@ -1,7 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect, useRef } from "react";
 import useAuthStore from "./store/authStore";
-import ProtectedRoute from "./utils/ProtectedRoute";
 
 const AuthPage = lazy(() => import("./pages/AuthPage"));
 const Home = lazy(() => import("./pages/Home"));
@@ -13,39 +12,41 @@ function GuestRoute({ children }) {
 }
 
 function App() {
+  const hasRunInit = useRef(false);
+  const hasCheckedAuth = useAuthStore((state) => state.hasCheckedAuth);
+
+  useEffect(() => {
+    if (!hasRunInit.current) {
+      hasRunInit.current = true;
+      useAuthStore.getState().initialize();
+    }
+  }, []);
+
+  if (!hasCheckedAuth) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '100vh',
+        fontSize: '18px',
+        color: '#666'
+      }}>
+        Checking authentication...
+      </div>
+    );
+  }
+
   return (
-      <Suspense fallback={<p>Loading...</p>}>
-        <Routes>
-          {/* Homepage ALWAYS visible */}
-          <Route path="/home" element={<Home />} />
-
-          {/* Login (guest-only) */}
-          <Route
-            path="/login"
-            element={
-              <GuestRoute>
-                <AuthPage />
-              </GuestRoute>
-            }
-          />
-
-          {/* Register (guest-only) */}
-          <Route
-            path="/register"
-            element={
-              <GuestRoute>
-                <AuthPage />
-              </GuestRoute>
-            }
-          />
-
-          {/* Redirect root → homepage */}
-          <Route path="/" element={<Navigate to="/home" replace />} />
-
-          {/* Catch-all redirect */}
-          <Route path="/*" element={<Navigate to="/home" replace />} />
-        </Routes>
-      </Suspense>
+    <Suspense fallback={<div>Loading...</div>}>
+      <Routes>
+        <Route path="/home" element={<Home />} />
+        <Route path="/login" element={<GuestRoute><AuthPage /></GuestRoute>} />
+        <Route path="/register" element={<GuestRoute><AuthPage /></GuestRoute>} />
+        <Route path="/" element={<Navigate to="/home" replace />} />
+        <Route path="*" element={<Navigate to="/home" replace />} />
+      </Routes>
+    </Suspense>
   );
 }
 

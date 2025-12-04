@@ -6,7 +6,7 @@ import useAuthStore from '../store/authStore';
 
 export default function Home() {
   const { t, i18n } = useTranslation();
-  const { user } = useAuthStore();
+  const user = useAuthStore((state) => state.user);
   
   // State
   const [isDark, setIsDark] = useState(true);
@@ -291,7 +291,7 @@ export default function Home() {
               </div>
               <input
                 type="text"
-                placeholder={i18n.language === 'fr' ? "Quoi de neuf, " + user?.first_name + " ?" : `What's on your mind, ${user?.first_name}?`}
+                placeholder={i18n.language === 'fr' ? "Quoi de neuf, " + user?.username + " ?" : `What's on your mind, ${user?.username}?`}
                 value={newPostContent}
                 onChange={(e) => setNewPostContent(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleCreatePost()}

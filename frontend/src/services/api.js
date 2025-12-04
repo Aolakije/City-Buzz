@@ -4,7 +4,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true, // Important for httpOnly cookies
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -19,21 +19,24 @@ api.interceptors.request.use(
     return Promise.reject(error);
   }
 );
+
 // Response interceptor
 api.interceptors.response.use(
   (response) => {
-    return response; // <-- Keep full response, do NOT unwrap .data here
+    return response;
   },
   (error) => {
+    // DON'T redirect on 401 for getCurrentUser - let the app handle it
     if (error.response?.status === 401) {
-      // Unauthorized - redirect to login
-      window.location.href = '/login';
+      // Only redirect if it's NOT the getCurrentUser call
+      if (!error.config.url.includes('/users/me')) {
+        window.location.href = '/login';
+      }
     }
     
     const message = error.response?.data?.error || 'An error occurred';
     return Promise.reject(new Error(message));
   }
 );
-
 
 export default api;
