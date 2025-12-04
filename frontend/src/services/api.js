@@ -19,11 +19,10 @@ api.interceptors.request.use(
     return Promise.reject(error);
   }
 );
-
 // Response interceptor
 api.interceptors.response.use(
   (response) => {
-    return response.data;
+    return response; // <-- Keep full response, do NOT unwrap .data here
   },
   (error) => {
     if (error.response?.status === 401) {
@@ -35,5 +34,6 @@ api.interceptors.response.use(
     return Promise.reject(new Error(message));
   }
 );
+
 
 export default api;

@@ -277,7 +277,7 @@ export default function AuthPage() {
           fontSize: '44px',
           fontWeight: '500',
           marginBottom: '5px',
-          marginTop: '-8px',
+          marginTop: '-9px',
           color: isDark ? colors.accent : colors.primary,
           textShadow: isDark 
             ? `0 0 30px ${colors.accent}40` 
