@@ -23,18 +23,7 @@ function App() {
   }, []);
 
   if (!hasCheckedAuth) {
-    return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
-        fontSize: '18px',
-        color: '#666'
-      }}>
-        Checking authentication...
-      </div>
-    );
+    return 
   }
 
   return (
