@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
+import useThemeStore from '../store/themeStore';
 
 export default function Layout({ children }) {
   const navigate = useNavigate();
@@ -9,8 +10,10 @@ export default function Layout({ children }) {
   const { i18n } = useTranslation();
   const { user, logout } = useAuthStore();
   
-  const [isDark, setIsDark] = useState(true);
+  // Use theme store instead of local state
+  const { isDark, toggleTheme } = useThemeStore();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMessages, setShowMessages] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -100,7 +103,7 @@ export default function Layout({ children }) {
       height="22" 
       viewBox="0 0 24 24" 
       fill="none" 
-      stroke={active ? colors.accent : theme.iconColor}
+      stroke={active ? (isDark ? colors.accent : colors.primary) : theme.iconColor}
       strokeWidth="2" 
       strokeLinecap="round" 
       strokeLinejoin="round"
@@ -138,7 +141,7 @@ export default function Layout({ children }) {
               borderRadius: '10px',
               cursor: 'pointer',
               transition: 'background-color 0.2s ease',
-              borderLeft: activeItem === item.id ? `3px solid ${colors.accent}` : '3px solid transparent'
+              borderLeft: activeItem === item.id ? `3px solid ${isDark ? colors.accent : colors.primary}` : '3px solid transparent'
             }}
             onMouseOver={(e) => {
               if (activeItem !== item.id) e.currentTarget.style.backgroundColor = theme.bgHover;
@@ -151,7 +154,7 @@ export default function Layout({ children }) {
             <span style={{
               fontSize: '15px',
               fontWeight: activeItem === item.id ? '600' : '500',
-              color: activeItem === item.id ? colors.accent : theme.text
+              color: activeItem === item.id ? (isDark ? colors.accent : colors.primary) : theme.text
             }}>
               {item.label}
             </span>
@@ -181,7 +184,7 @@ export default function Layout({ children }) {
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '0 16px',
-        zIndex: 1000
+        zIndex: 2000
       }}>
         {/* Left Section - Mobile Menu + Search + Language */}
         <div style={{
@@ -253,25 +256,110 @@ export default function Layout({ children }) {
             />
           </div>
           
-          {/* Language Switcher */}
-          <button
-            onClick={() => i18n.changeLanguage(i18n.language === 'fr' ? 'en' : 'fr')}
-            style={{
-              padding: '8px 12px',
-              backgroundColor: theme.bgInput,
-              border: 'none',
-              borderRadius: '16px',
-              color: theme.text,
-              fontSize: '13px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}
-          >
-            {i18n.language.toUpperCase()}
-          </button>
+          {/* Language Dropdown */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => {
+                setShowLanguageMenu(!showLanguageMenu);
+                setShowProfileMenu(false);
+              }}
+              style={{
+                padding: '8px 12px',
+                backgroundColor: theme.bgInput,
+                border: 'none',
+                borderRadius: '16px',
+                color: theme.text,
+                fontSize: '13px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <span>{i18n.language === 'fr' ? '🇫🇷' : '🇬🇧'}</span>
+              <span>{i18n.language.toUpperCase()}</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+
+            {/* Language Dropdown Menu */}
+            {showLanguageMenu && (
+              <div style={{
+                position: 'absolute',
+                top: '48px',
+                right: '0',
+                width: '160px',
+                backgroundColor: isDark ? '#242536' : '#fff',
+                borderRadius: '8px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                padding: '8px',
+                zIndex: 2000
+              }}>
+                <button
+                  onClick={() => {
+                    i18n.changeLanguage('fr');
+                    setShowLanguageMenu(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    backgroundColor: i18n.language === 'fr' ? theme.bgActive : 'transparent',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    fontSize: '14px',
+                    color: theme.text,
+                    fontWeight: i18n.language === 'fr' ? '600' : '400'
+                  }}
+                  onMouseOver={(e) => {
+                    if (i18n.language !== 'fr') e.currentTarget.style.backgroundColor = theme.bgHover;
+                  }}
+                  onMouseOut={(e) => {
+                    if (i18n.language !== 'fr') e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
+                >
+                  <span style={{ fontSize: '20px' }}>🇫🇷</span>
+                  <span>Français</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    i18n.changeLanguage('en');
+                    setShowLanguageMenu(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    backgroundColor: i18n.language === 'en' ? theme.bgActive : 'transparent',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    fontSize: '14px',
+                    color: theme.text,
+                    fontWeight: i18n.language === 'en' ? '600' : '400',
+                    marginTop: '4px'
+                  }}
+                  onMouseOver={(e) => {
+                    if (i18n.language !== 'en') e.currentTarget.style.backgroundColor = theme.bgHover;
+                  }}
+                  onMouseOut={(e) => {
+                    if (i18n.language !== 'en') e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
+                >
+                  <span style={{ fontSize: '20px' }}>🇬🇧</span>
+                  <span>English</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         
         {/* Center Section - Logo */}
@@ -283,12 +371,12 @@ export default function Layout({ children }) {
             transform: 'translateX(-50%)',
             fontSize: '24px',
             fontWeight: 'bold',
-          color: isDark ? colors.accent : colors.primary,
-          textShadow: isDark 
-            ? `0 0 30px ${colors.accent}40` 
-            : 'none',
+            color: isDark ? colors.accent : colors.primary,
+            textShadow: isDark 
+              ? `0 0 30px ${colors.accent}40` 
+              : 'none',
             cursor: 'pointer'
-        }}>
+          }}>
           City-Buzz
         </div>
         
@@ -327,7 +415,7 @@ export default function Layout({ children }) {
                   transform: 'translateX(-50%)',
                   width: '60%',
                   height: '3px',
-                  backgroundColor: colors.accent,
+                  backgroundColor: isDark ? colors.accent : colors.primary,
                   borderRadius: '2px'
                 }} />
               )}
@@ -348,6 +436,7 @@ export default function Layout({ children }) {
               setShowMessages(!showMessages);
               setShowNotifications(false);
               setShowProfileMenu(false);
+              setShowLanguageMenu(false);
               navigate('/chat');
             }}
             style={{
@@ -399,6 +488,7 @@ export default function Layout({ children }) {
               setShowNotifications(!showNotifications);
               setShowMessages(false);
               setShowProfileMenu(false);
+              setShowLanguageMenu(false);
             }}
             style={{
               width: '40px',
@@ -446,7 +536,7 @@ export default function Layout({ children }) {
           
           {/* Dark/Light Mode Toggle */}
           <button
-            onClick={() => setIsDark(!isDark)}
+            onClick={toggleTheme}
             style={{
               width: '40px',
               height: '40px',
@@ -484,6 +574,7 @@ export default function Layout({ children }) {
               setShowProfileMenu(!showProfileMenu);
               setShowNotifications(false);
               setShowMessages(false);
+              setShowLanguageMenu(false);
             }}
             style={{
               width: '40px',
@@ -503,7 +594,7 @@ export default function Layout({ children }) {
           >
             {user?.first_name?.[0]}{user?.last_name?.[0]}
           </button>
-          
+            
           {/* Profile Dropdown */}
           {showProfileMenu && (
             <div style={{
@@ -515,7 +606,7 @@ export default function Layout({ children }) {
               borderRadius: '12px',
               boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
               padding: '12px',
-              zIndex: 1001
+              zIndex: 2000
             }}>
               <div 
                 onClick={() => {
@@ -555,7 +646,6 @@ export default function Layout({ children }) {
                   </div>
                 </div>
               </div>
-              
               <div
                 onClick={() => {
                   navigate('/settings');
@@ -598,6 +688,25 @@ export default function Layout({ children }) {
         </div>
       </header>
 
+      {/* Click Outside Handler for Language and Profile Menus */}
+      {(showLanguageMenu || showProfileMenu) && (
+        <div 
+          onClick={() => {
+            setShowLanguageMenu(false);
+            setShowProfileMenu(false);
+          }}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 1999,
+            backgroundColor: 'transparent'
+          }}
+        />
+      )}
+
       {/* Mobile Sidebar Overlay */}
       {mobileMenuOpen && (
         <div onClick={() => setMobileMenuOpen(false)} style={{
@@ -629,16 +738,7 @@ export default function Layout({ children }) {
       <main style={{
         marginLeft: '240px', paddingTop: '60px', minHeight: '100vh'
       }} className="main-content">
-        {children || (
-          <div style={{ padding: '24px' }}>
-            <h1 style={{ color: theme.text, marginBottom: '8px', fontSize: '24px' }}>
-              {currentPage.charAt(0).toUpperCase() + currentPage.slice(1)}
-            </h1>
-            <p style={{ color: theme.textSecondary }}>
-              Content for {currentPage} page goes here
-            </p>
-          </div>
-        )}
+        {children}
       </main>
 
       {/* Responsive CSS */}

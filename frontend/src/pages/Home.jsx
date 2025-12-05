@@ -3,26 +3,26 @@ import { useTranslation } from 'react-i18next';
 import Layout from '../components/layout';
 import postService from '../services/post.service';
 import useAuthStore from '../store/authStore';
+import useThemeStore from '../store/themeStore';
 
 export default function Home() {
   const { t, i18n } = useTranslation();
   const user = useAuthStore((state) => state.user);
   
-  // State
-  const [isDark, setIsDark] = useState(true);
+  // Use theme store instead of local state
+  const isDark = useThemeStore((state) => state.isDark);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [newPostContent, setNewPostContent] = useState('');
   const [creatingPost, setCreatingPost] = useState(false);
-  const [expandedPosts, setExpandedPosts] = useState({});
   const [likedPosts, setLikedPosts] = useState({});
-  const [commentInput, setCommentInput] = useState({}); // Track comment inputs per post
-  const [submittingComment, setSubmittingComment] = useState({}); // Track loading per post
-  const [showCommentsFor, setShowCommentsFor] = useState({}); // Track which posts show comments
-  const [showMenuFor, setShowMenuFor] = useState(null); // Track which post menu is open
-  const [editingPost, setEditingPost] = useState(null); // Track which post is being edited
-  const [editContent, setEditContent] = useState(''); // Content for editing
+  const [commentInput, setCommentInput] = useState({});
+  const [submittingComment, setSubmittingComment] = useState({});
+  const [showCommentsFor, setShowCommentsFor] = useState({});
+  const [showMenuFor, setShowMenuFor] = useState(null);
+  const [editingPost, setEditingPost] = useState(null);
+  const [editContent, setEditContent] = useState('');
 
   // Theme Config
   const colors = { 
@@ -43,17 +43,19 @@ export default function Home() {
     divider: isDark ? 'rgba(255, 255, 255, 0.08)' : '#e5e7eb',
   };
 
-  useEffect(() => { fetchPosts(); }, []);
-  // Initialize liked posts from backend data
-    useEffect(() => {
+  useEffect(() => { 
+    fetchPosts(); 
+  }, []);
+
+  useEffect(() => {
     const initialLikes = {};
     posts.forEach(post => {
-        if (post.is_liked) {
+      if (post.is_liked) {
         initialLikes[post.id] = true;
-        }
+      }
     });
     setLikedPosts(initialLikes);
-    }, [posts.length]); // Only run when posts are first loaded
+  }, [posts.length]);
 
   const fetchPosts = async () => {
     try {
@@ -85,6 +87,7 @@ export default function Home() {
     } catch (err) {
       console.error('Create post error:', err);
       setError('Failed to create post');
+      setTimeout(() => setError(''), 3000);
     } finally {
       setCreatingPost(false);
     }
@@ -106,102 +109,92 @@ export default function Home() {
     }
   };
 
-  // Handle comment submission
- const handleSubmitComment = async (postId) => {
-  const content = commentInput[postId]?.trim();
-  if (!content) return;
+  const handleSubmitComment = async (postId) => {
+    const content = commentInput[postId]?.trim();
+    if (!content) return;
 
-  try {
-    setSubmittingComment(prev => ({ ...prev, [postId]: true }));
-    
-    // Create comment via API
-    const newComment = await postService.createComment(postId, content);
-    
-    if (!newComment) {
-      throw new Error('No comment data returned from API');
-    }
-    
-    // OPTIMISTIC UPDATE: Add comment immediately without refetching
-    setPosts(posts.map(p => {
-      if (p.id === postId) {
-        const updatedComments = [...(p.comments || []), {
-          id: newComment.id || Date.now(),
-          content: newComment.content || content,
-          author: newComment.author || user,
-          created_at: newComment.created_at || new Date().toISOString()
-        }];
-        
-        return {
-          ...p,
-          comments: updatedComments,
-          comments_count: updatedComments.length
-        };
-      }
-      return p;
-    }));
-
-    // Clear input IMMEDIATELY (don't wait for backend)
-    setCommentInput(prev => ({ ...prev, [postId]: '' }));
-    
-  } catch (err) {
-    console.error('Submit comment error:', err);
-    setError('Failed to post comment. Please try again.');
-    setTimeout(() => setError(''), 5000);
-  } finally {
-    setSubmittingComment(prev => ({ ...prev, [postId]: false }));
-  }
-}; 
-
-  // Handle comment input change
-  const handleCommentInputChange = (postId, value) => {
-    setCommentInput(prev => ({ ...prev, [postId]: value }));
-  };
-
- const toggleComments = async (postId) => {
-  const isCurrentlyShowing = showCommentsFor[postId];
-  
-  // Toggle the visibility first
-  setShowCommentsFor(prev => ({ ...prev, [postId]: !prev[postId] }));
-
-  // ONLY fetch if we're OPENING (not closing) AND comments aren't already loaded
-  if (!isCurrentlyShowing && (!posts.find(p => p.id === postId)?.comments?.length)) {
     try {
-      const comments = await postService.getComments(postId);
+      setSubmittingComment(prev => ({ ...prev, [postId]: true }));
+      
+      const newComment = await postService.createComment(postId, content);
+      
+      if (!newComment) {
+        throw new Error('No comment data returned from API');
+      }
       
       setPosts(posts.map(p => {
         if (p.id === postId) {
+          const updatedComments = [...(p.comments || []), {
+            id: newComment.id || Date.now(),
+            content: newComment.content || content,
+            author: newComment.author || user,
+            created_at: newComment.created_at || new Date().toISOString()
+          }];
+          
           return {
             ...p,
-            comments: comments,
-            comments_count: comments.length // Update count from backend
+            comments: updatedComments,
+            comments_count: updatedComments.length
           };
         }
         return p;
       }));
+
+      setCommentInput(prev => ({ ...prev, [postId]: '' }));
+      
     } catch (err) {
-      console.error('Error fetching comments:', err);
+      console.error('Submit comment error:', err);
+      setError('Failed to post comment. Please try again.');
+      setTimeout(() => setError(''), 5000);
+    } finally {
+      setSubmittingComment(prev => ({ ...prev, [postId]: false }));
     }
-  }
-};
-  // Toggle post menu
+  };
+
+  const handleCommentInputChange = (postId, value) => {
+    setCommentInput(prev => ({ ...prev, [postId]: value }));
+  };
+
+  const toggleComments = async (postId) => {
+    const isCurrentlyShowing = showCommentsFor[postId];
+    
+    setShowCommentsFor(prev => ({ ...prev, [postId]: !prev[postId] }));
+
+    if (!isCurrentlyShowing && (!posts.find(p => p.id === postId)?.comments?.length)) {
+      try {
+        const comments = await postService.getComments(postId);
+        
+        setPosts(posts.map(p => {
+          if (p.id === postId) {
+            return {
+              ...p,
+              comments: comments,
+              comments_count: comments.length
+            };
+          }
+          return p;
+        }));
+      } catch (err) {
+        console.error('Error fetching comments:', err);
+      }
+    }
+  };
+
   const toggleMenu = (postId) => {
     setShowMenuFor(showMenuFor === postId ? null : postId);
   };
 
-  // Start editing a post
   const startEdit = (post) => {
     setEditingPost(post.id);
     setEditContent(post.content);
     setShowMenuFor(null);
   };
 
-  // Cancel editing
   const cancelEdit = () => {
     setEditingPost(null);
     setEditContent('');
   };
 
-  // Save edited post
   const handleUpdatePost = async (postId) => {
     if (!editContent.trim()) return;
     
@@ -217,7 +210,6 @@ export default function Home() {
     }
   };
 
-  // Delete post
   const handleDeletePost = async (postId) => {
     if (!window.confirm('Are you sure you want to delete this post?')) return;
     
@@ -230,10 +222,6 @@ export default function Home() {
       setError('Failed to delete post');
       setTimeout(() => setError(''), 3000);
     }
-  };
-
-  const toggleExpand = (postId) => { 
-    setExpandedPosts(prev => ({ ...prev, [postId]: !prev[postId] })); 
   };
 
   const btnStyle = {
@@ -278,7 +266,7 @@ export default function Home() {
           
           {/* Error Display */}
           {error && (
-            <div style={{ backgroundColor: '#fee', color: '#c33', padding: '12px', borderRadius: '8px', marginBottom: '16px' }}>
+            <div style={{ backgroundColor: '#fee2e2', color: '#991b1b', padding: '12px', borderRadius: '8px', marginBottom: '16px' }}>
               {error}
             </div>
           )}
@@ -286,15 +274,15 @@ export default function Home() {
           {/* Create Post Card */}
           <div style={{ backgroundColor: theme.bgCard, borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.1)', marginBottom: '20px', padding: '16px' }}>
             <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
-              <div style={{ width: '40px', height: '40px', background: colors.primary, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold' }}>
+              <div style={{ width: '40px', height: '40px', background: colors.primary, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold', fontSize: '14px' }}>
                 {user?.first_name?.[0]}{user?.last_name?.[0]}
               </div>
               <input
                 type="text"
-                placeholder={i18n.language === 'fr' ? "Quoi de neuf, " + user?.username + " ?" : `What's on your mind, ${user?.username}?`}
+                placeholder={i18n.language === 'fr' ? `Quoi de neuf, ${user?.username} ?` : `What's on your mind, ${user?.username}?`}
                 value={newPostContent}
                 onChange={(e) => setNewPostContent(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleCreatePost()}
+                onKeyPress={(e) => e.key === 'Enter' && !creatingPost && handleCreatePost()}
                 disabled={creatingPost}
                 style={{ flex: 1, padding: '10px 16px', backgroundColor: theme.bgInput, border: 'none', borderRadius: '20px', color: theme.text, fontSize: '15px', outline: 'none' }}
               />
@@ -327,7 +315,7 @@ export default function Home() {
                 
                 {/* Post Header */}
                 <div style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '40px', height: '40px', background: `linear-gradient(45deg, ${colors.primary}, ${colors.linkBlue})`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '600' }}>
+                  <div style={{ width: '40px', height: '40px', background: `linear-gradient(45deg, ${colors.primary}, ${colors.linkBlue})`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '600', fontSize: '14px' }}>
                     {post.author?.first_name?.[0]}
                   </div>
                   <div>
@@ -424,24 +412,26 @@ export default function Home() {
 
                 {/* Post Content - Editable or Display */}
                 {isEditing ? (
-                  <div style={{ padding: '0 16px 16px' }}>
+                  <div style={{ padding: '0 16px 16px'}}>
                     <textarea
-                      value={editContent}
-                      onChange={(e) => setEditContent(e.target.value)}
-                      style={{
-                        width: '100%',
-                        minHeight: '80px',
-                        padding: '12px',
-                        backgroundColor: theme.bgInput,
-                        border: `1px solid ${theme.border}`,
-                        borderRadius: '8px',
-                        color: theme.text,
-                        fontSize: '15px',
-                        lineHeight: '1.5',
-                        resize: 'vertical',
-                        fontFamily: 'inherit'
-                      }}
-                    />
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        style={{
+                            width: '100%',
+                            boxSizing: 'border-box',
+                            minHeight: '80px',
+                            padding: '12px',
+                            backgroundColor: theme.bgInput,
+                            border: `1px solid ${theme.border}`,
+                            borderRadius: '8px',
+                            color: theme.text,
+                            fontSize: '15px',
+                            lineHeight: '1.5',
+                            fontFamily: 'inherit',
+                            resize: 'none',
+                        }}
+                        />
+
                     <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
                       <button
                         onClick={() => handleUpdatePost(post.id)}
@@ -492,7 +482,7 @@ export default function Home() {
                      </div>
                    )}
                    <div style={{ marginLeft: 'auto' }}>
-                      {post.comments?.length > 0 && <span>{post.comments.length} comments</span>}
+                      {post.comments_count > 0 && <span>{post.comments_count} {post.comments_count === 1 ? 'comment' : 'comments'}</span>}
                    </div>
                 </div>
 
@@ -514,97 +504,98 @@ export default function Home() {
                     <span>{i18n.language === 'fr' ? 'J\'aime' : 'Like'}</span>
                   </button>
 
-                {/* COMMENT BUTTON */}
-<button 
-  onClick={() => toggleComments(post.id)}
-  style={btnStyle}
-  onMouseOver={(e) => e.currentTarget.style.backgroundColor = theme.bgHover}
-  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
->
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
-  </svg>
-  <span>{i18n.language === 'fr' ? 'Commenter' : 'Comment'}</span>
-</button>
+                  {/* COMMENT BUTTON */}
+                  <button 
+                    onClick={() => toggleComments(post.id)}
+                    style={btnStyle}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = theme.bgHover}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                    </svg>
+                    <span>{i18n.language === 'fr' ? 'Commenter' : 'Comment'}</span>
+                  </button>
 
-{/* SHARE BUTTON */}
-<button 
-  style={btnStyle}
-  onMouseOver={(e) => e.currentTarget.style.backgroundColor = theme.bgHover}
-  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
->
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
-    <polyline points="16 6 12 2 8 6"></polyline>
-    <line x1="12" y1="2" x2="12" y2="15"></line>
-  </svg>
-  <span>Partager</span>
-</button>
-</div>
+                  {/* SHARE BUTTON */}
+                  <button 
+                    style={btnStyle}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = theme.bgHover}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                      <polyline points="16 6 12 2 8 6"></polyline>
+                      <line x1="12" y1="2" x2="12" y2="15"></line>
+                    </svg>
+                    <span>{i18n.language === 'fr' ? 'Partager' : 'Share'}</span>
+                  </button>
+                </div>
 
-{/* Comment Section & Input */}
-{/* ======= FIX ADDED: Wrap comments & input with showCommentsFor[post.id] ======= */}
-{showCommentsFor[post.id] && (
-  <div style={{ padding: '16px' }}>
+                {/* Comment Section - Only visible when toggled */}
+                {showComments && (
+                  <div style={{ padding: '16px', borderTop: `1px solid ${theme.divider}` }}>
+                    
+                    {/* Existing Comments */}
+                    {hasComments && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
+                        {post.comments.map(comment => (
+                          <div key={comment.id} style={{ display: 'flex', gap: '8px' }}>
+                             <div style={{ width: '32px', height: '32px', background: `linear-gradient(135deg, ${colors.primary}, ${colors.linkBlue})`, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold', color: 'white' }}>
+                                {comment.author?.first_name?.[0]}
+                             </div>
+                             <div style={{ backgroundColor: theme.bgInput, padding: '8px 12px', borderRadius: '12px', fontSize: '14px', maxWidth: '80%' }}>
+                                <div style={{ fontWeight: '600', color: theme.text, fontSize: '13px' }}>
+                                  {comment.author?.first_name} {comment.author?.last_name}
+                                </div>
+                                <div style={{ color: theme.text, marginTop: '2px' }}>{comment.content}</div>
+                             </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
-    {/* Existing Comments */}
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
-      {post.comments.map(comment => (
-        <div key={comment.id} style={{ display: 'flex', gap: '8px' }}>
-          <div style={{ width: '32px', height: '32px', background: '#ccc', borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold' }}>
-            {comment.author?.first_name?.[0]}
-          </div>
-          <div style={{ backgroundColor: theme.bgInput, padding: '8px 12px', borderRadius: '12px', fontSize: '14px' }}>
-            <div style={{ fontWeight: '600', color: theme.text, fontSize: '13px' }}>
-              {comment.author?.first_name} {comment.author?.last_name}
-            </div>
-            <div style={{ color: theme.text }}>{comment.content}</div>
-          </div>
+                    {/* Write Comment Input */}
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <div style={{ width: '32px', height: '32px', background: colors.primary, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '12px', fontWeight: 'bold' }}>
+                        {user?.first_name?.[0]}
+                      </div>
+                      <div style={{ flex: 1, backgroundColor: theme.bgInput, borderRadius: '20px', padding: '0 12px', display: 'flex', alignItems: 'center' }}>
+                        <input 
+                          type="text" 
+                          placeholder={i18n.language === 'fr' ? 'Écrire un commentaire...' : 'Write a comment...'}
+                          value={commentInput[post.id] || ''}
+                          onChange={(e) => handleCommentInputChange(post.id, e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter' && !submittingComment[post.id]) {
+                              handleSubmitComment(post.id);
+                            }
+                          }}
+                          disabled={submittingComment[post.id]}
+                          style={{ width: '100%', padding: '10px 0', border: 'none', background: 'transparent', outline: 'none', color: theme.text, fontSize: '14px' }}
+                        />
+                        <button 
+                          onClick={() => handleSubmitComment(post.id)}
+                          disabled={!commentInput[post.id]?.trim() || submittingComment[post.id]}
+                          style={{ border: 'none', background: 'none', cursor: commentInput[post.id]?.trim() ? 'pointer' : 'not-allowed', padding: '8px', opacity: commentInput[post.id]?.trim() ? 1 : 0.5 }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={theme.textSecondary} strokeWidth="2">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            );
+          })}
         </div>
-      ))}
-    </div>
-
-    {/* Write Comment Input - FIXED */}
-    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-      <div style={{ width: '32px', height: '32px', background: colors.primary, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '12px' }}>
-        {user?.first_name?.[0]}
-      </div>
-      <div style={{ flex: 1, backgroundColor: theme.bgInput, borderRadius: '20px', padding: '0 12px', display: 'flex', alignItems: 'center' }}>
-        <input 
-          type="text" 
-          placeholder={i18n.language === 'fr' ? 'Écrire un commentaire...' : 'Write a comment...'}
-          value={commentInput[post.id] || ''}
-          onChange={(e) => handleCommentInputChange(post.id, e.target.value)}
-          onKeyPress={(e) => {
-            if (e.key === 'Enter' && !submittingComment[post.id]) {
-              handleSubmitComment(post.id);
-            }
-          }}
-          disabled={submittingComment[post.id]}
-          style={{ width: '100%', padding: '10px 0', border: 'none', background: 'transparent', outline: 'none', color: theme.text, fontSize: '14px' }}
-        />
-        <button 
-          onClick={() => handleSubmitComment(post.id)}
-          disabled={!commentInput[post.id]?.trim() || submittingComment[post.id]}
-          style={{ border: 'none', background: 'none', cursor: commentInput[post.id]?.trim() ? 'pointer' : 'not-allowed', padding: '8px', opacity: commentInput[post.id]?.trim() ? 1 : 0.5 }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={theme.textSecondary} strokeWidth="2">
-            <line x1="22" y1="2" x2="11" y2="13"></line>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-          </svg>
-        </button>
-      </div>
-    </div>
-
-  </div>
-)}
-</div>
-);
-})}
-</div>     
 
         {/* Right Sidebar */}
-        <div style={{ width: '300px', flexShrink: 0, display: 'none', '@media(min-width: 900px)': { display: 'block' } }}> 
+        <div style={{ width: '300px', flexShrink: 0 }}> 
            <div style={{ backgroundColor: theme.bgCard, borderRadius: '8px', border: `1px solid ${theme.border}`, padding: '16px' }}>
              <h3 style={{ margin: '0 0 12px 0', color: theme.textSecondary, fontSize: '14px', fontWeight: '600', textTransform: 'uppercase' }}>
                {i18n.language === 'fr' ? 'Météo' : 'Weather'}
@@ -620,6 +611,22 @@ export default function Home() {
         </div>
 
       </div>
+
+      {/* Click Outside Handler for Three-Dots Menu */}
+      {showMenuFor !== null && (
+        <div 
+          onClick={() => setShowMenuFor(null)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 999,
+            backgroundColor: 'transparent'
+          }}
+        />
+      )}
     </Layout>
   );
 }
