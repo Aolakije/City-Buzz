@@ -15,6 +15,7 @@ type Config struct {
 	JWT      JWTConfig
 	CORS     CORSConfig
 	Cookie   CookieConfig
+	NewsAPI  NewsAPI
 }
 
 type ServerConfig struct {
@@ -50,6 +51,10 @@ type CORSConfig struct {
 type CookieConfig struct {
 	Domain string
 	Secure bool
+}
+
+type NewsAPI struct {
+	APIKey string
 }
 
 func Load() (*Config, error) {
@@ -92,6 +97,10 @@ func Load() (*Config, error) {
 			Domain: getEnv("COOKIE_DOMAIN", "localhost"),
 			Secure: getEnv("COOKIE_SECURE", "false") == "true",
 		},
+	}
+	// added a NewsAPI configuration
+	config.NewsAPI = NewsAPI{
+		APIKey: getEnv("NEWS_API_KEY", ""),
 	}
 
 	return config, nil
