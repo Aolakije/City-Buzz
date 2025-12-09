@@ -4,6 +4,7 @@ import useAuthStore from "./store/authStore";
 
 const AuthPage = lazy(() => import("./pages/AuthPage"));
 const Home = lazy(() => import("./pages/Home"));
+const News = lazy(() => import("./pages/News"));
 
 function GuestRoute({ children }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -30,6 +31,7 @@ function App() {
     <Suspense fallback={<div>Loading...</div>}>
       <Routes>
         <Route path="/home" element={<Home />} />
+        <Route path="/news" element={<News />} />
         <Route path="/login" element={<GuestRoute><AuthPage /></GuestRoute>} />
         <Route path="/register" element={<GuestRoute><AuthPage /></GuestRoute>} />
         <Route path="/" element={<Navigate to="/home" replace />} />
