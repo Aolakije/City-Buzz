@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/Aolakije/City-Buzz/internal/auth"
 	"github.com/Aolakije/City-Buzz/internal/middleware"
+	"github.com/Aolakije/City-Buzz/internal/news"
 	"github.com/Aolakije/City-Buzz/internal/post"
 	"github.com/Aolakije/City-Buzz/pkg/config"
 	"github.com/gofiber/fiber/v2"
@@ -36,6 +37,11 @@ func SetupRoutes(app *fiber.App, db *pgxpool.Pool, cfg *config.Config) {
 	postRepo := post.NewRepository(db)
 	postService := post.NewService(postRepo)
 	postHandler := post.NewHandler(postService)
+
+	// Initialize news module
+	newsRepo := news.NewRepository(db)
+	newsService := news.NewService(newsRepo, cfg)
+	newsHandler := news.NewHandler(newsService)
 
 	// Health check
 	app.Get("/health", func(c *fiber.Ctx) error {
@@ -73,4 +79,18 @@ func SetupRoutes(app *fiber.App, db *pgxpool.Pool, cfg *config.Config) {
 	// Comment routes (protected)
 	commentRoutes := api.Group("/comments", middleware.AuthMiddleware(cfg))
 	commentRoutes.Delete("/:id", postHandler.DeleteComment)
+	// News routes
+	newsRoutes := api.Group("/news")
+	// Public routes (no auth required)
+	newsRoutes.Get("/rouen", newsHandler.GetRouenNews)
+	newsRoutes.Get("/normandy", newsHandler.GetNormandyNews)
+	newsRoutes.Get("/france", newsHandler.GetFranceNews)
+	newsRoutes.Get("/city", newsHandler.GetCityNews)
+	newsRoutes.Get("/search", newsHandler.SearchNews)
+
+	// Protected routes (auth required)
+	newsProtected := newsRoutes.Group("/", middleware.AuthMiddleware(cfg))
+	newsProtected.Post("/save", newsHandler.SaveArticle)
+	newsProtected.Get("/saved", newsHandler.GetSavedArticles)
+	newsProtected.Delete("/saved", newsHandler.DeleteSavedArticle)
 }
