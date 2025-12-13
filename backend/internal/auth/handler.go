@@ -69,16 +69,16 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 	}
 
 	// Set JWT token in httpOnly cookie
-	c.Cookie(&fiber.Cookie{
-		Name:     "auth_token",
-		Value:    token,
-		HTTPOnly: true,
-		Secure:   h.cfg.Cookie.Secure, // true in production (HTTPS)
-		SameSite: "Strict",
-		MaxAge:   int(h.cfg.JWT.Expiry.Seconds()),
-		Path:     "/",
-		Domain:   h.cfg.Cookie.Domain,
-	})
+	cookie := new(fiber.Cookie)
+cookie.Name = "auth_token"
+cookie.Value = token
+cookie.Path = "/"
+cookie.MaxAge = 60 * 60 * 24 * 7 // 7 days
+cookie.HTTPOnly = true
+cookie.Secure = false           // false for localhost / Docker
+cookie.SameSite = "None"        // critical for cross-port POST from Vite frontend
+c.Cookie(cookie)
+
 
 	log.Printf("User logged in: %s (ID: %s)", user.Username, user.ID)
 
