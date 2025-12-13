@@ -10,7 +10,7 @@ const api = axios.create({
   },
 });
 
-// Request interceptor
+// Request interceptor - Add auth token
 api.interceptors.request.use(
   (config) => {
     return config;
@@ -26,14 +26,12 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    // DON'T redirect on 401 for getCurrentUser - let the app handle it
     if (error.response?.status === 401) {
-      // Only redirect if it's NOT the getCurrentUser call
-      if (!error.config.url.includes('/users/me')) {
+      // Don't redirect for news endpoints - let's see the actual error
+      if (!error.config.url.includes('/users/me') && !error.config.url.includes('/news/')) {
         window.location.href = '/login';
       }
     }
-    
     const message = error.response?.data?.error || 'An error occurred';
     return Promise.reject(new Error(message));
   }
