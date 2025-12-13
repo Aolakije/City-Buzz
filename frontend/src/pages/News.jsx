@@ -1,11 +1,27 @@
-import { useState } from 'react';
-import Layout from '../components/layout';
+import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import Layout from '../components/Layout';
+import newsService from '../services/news.service';
+import useThemeStore from '../store/themeStore';
+import useAuthStore from '../store/authStore';
 
-export default function NewsMockup() {
-  const [isDark, setIsDark] = useState(true);
-  const [language, setLanguage] = useState('FR');
+export default function News() {
+  const { i18n } = useTranslation();
+  const isDark = useThemeStore((state) => state.isDark);
+  const { user } = useAuthStore();
+  
+  // State
+  const [activeLocation, setActiveLocation] = useState('rouen');
   const [activeCategory, setActiveCategory] = useState('all');
   const [savedArticles, setSavedArticles] = useState({});
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showLocationMenu, setShowLocationMenu] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   
   const colors = {
     primary: '#292d4f',
@@ -24,459 +40,582 @@ export default function NewsMockup() {
   };
 
   const t = {
-    news: language === 'FR' ? 'Actualités' : 'News',
-    search: language === 'FR' ? 'Rechercher...' : 'Search...',
-    featured: language === 'FR' ? 'À la une' : 'Featured',
-    forYou: language === 'FR' ? 'Pour vous' : 'For You',
-    readMore: language === 'FR' ? 'Lire la suite' : 'Read more',
-    save: language === 'FR' ? 'Enregistrer' : 'Save',
-    share: language === 'FR' ? 'Partager' : 'Share',
-    video: language === 'FR' ? 'Vidéo' : 'Video',
-    basedOnSearch: language === 'FR' ? 'Basé sur vos recherches' : 'Based on your searches'
+    news: i18n.language === 'fr' ? 'Actualités' : 'News',
+    search: i18n.language === 'fr' ? 'Rechercher...' : 'Search...',
+    readMore: i18n.language === 'fr' ? 'Lire la suite' : 'Read more',
+    save: i18n.language === 'fr' ? 'Enregistrer' : 'Save',
+    saved: i18n.language === 'fr' ? 'Enregistré' : 'Saved',
+    loading: i18n.language === 'fr' ? 'Chargement...' : 'Loading...',
+    noArticles: i18n.language === 'fr' ? 'Aucun article trouvé' : 'No articles found',
+    errorLoading: i18n.language === 'fr' ? 'Erreur lors du chargement des actualités' : 'Error loading news',
+    rouen: 'Rouen',
+    normandy: i18n.language === 'fr' ? 'Normandie' : 'Normandy',
+    france: 'France',
+    loadMore: i18n.language === 'fr' ? 'Voir plus d\'articles' : 'Load More Articles',
+    noMore: i18n.language === 'fr' ? 'Vous avez vu tous les articles' : 'You\'ve seen all articles'
   };
+
+  const locations = [
+    { id: 'rouen', label: t.rouen, },
+    { id: 'normandy', label: t.normandy,},
+    { id: 'france', label: t.france,}
+  ];
 
   const categories = [
-    { id: 'all', label: language === 'FR' ? 'Tout' : 'All', color: colors.accent },
-    { id: 'breaking', label: language === 'FR' ? 'Dernière minute' : 'Breaking', color: '#ef4444' },
-    { id: 'local', label: language === 'FR' ? 'Local' : 'Local', color: '#3b82f6' },
-    { id: 'politics', label: language === 'FR' ? 'Politique' : 'Politics', color: '#8b5cf6' },
-    { id: 'sports', label: 'Sports', color: '#10b981' },
-    { id: 'culture', label: 'Culture', color: '#f59e0b' },
-    { id: 'economy', label: language === 'FR' ? 'Économie' : 'Economy', color: '#06b6d4' }
+    { id: 'all', label: i18n.language === 'fr' ? 'Tout' : 'All', color: colors.accent, apiCategory: '' },
+    { id: 'sports', label: 'Sports', color: '#10b981', apiCategory: 'sports' },
+    { id: 'business', label: i18n.language === 'fr' ? 'Économie' : 'Business', color: '#06b6d4', apiCategory: 'business' },
+    { id: 'technology', label: i18n.language === 'fr' ? 'Technologie' : 'Technology', color: '#8b5cf6', apiCategory: 'technology' },
+    { id: 'entertainment', label: i18n.language === 'fr' ? 'Divertissement' : 'Entertainment', color: '#f59e0b', apiCategory: 'entertainment' },
+    { id: 'science', label: 'Science', color: '#3b82f6', apiCategory: 'science' },
+    { id: 'health', label: i18n.language === 'fr' ? 'Santé' : 'Health', color: '#ef4444', apiCategory: 'health' }
   ];
 
-  const featuredNews = {
-    id: 0,
-    title: language === 'FR' 
-      ? "Rouen: Le nouveau tramway inauguré en grande pompe" 
-      : "Rouen: New tramway inaugurated with fanfare",
-    summary: language === 'FR'
-      ? "Le maire de Rouen a inauguré ce matin la nouvelle ligne de tramway qui reliera le centre-ville à la périphérie. Un projet attendu depuis plus de 10 ans par les Rouennais."
-      : "The mayor of Rouen inaugurated this morning the new tramway line that will connect the city center to the suburbs. A project awaited for over 10 years by the residents of Rouen.",
-    image: 'https://images.unsplash.com/photo-1554672407-e9e45a0b3ad8?w=1200&h=400&fit=crop',
-    source: 'Paris-Normandie',
-    time: '2h',
-    category: 'local',
-    hasVideo: false
+  const getApiCategory = (categoryId) => {
+    return categories.find(c => c.id === categoryId)?.apiCategory || '';
   };
 
-  const newsArticles = [
-    {
-      id: 1,
-      title: language === 'FR'
-        ? "Football: Le FC Rouen remporte le derby normand"
-        : "Football: FC Rouen wins the Norman derby",
-      summary: language === 'FR'
-        ? "Dans un match haletant, le FC Rouen s'est imposé 2-1 face au Havre AC devant plus de 10,000 spectateurs au Stade Robert Diochon..."
-        : "In a thrilling match, FC Rouen won 2-1 against Le Havre AC in front of more than 10,000 spectators at Robert Diochon Stadium...",
-      image: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=600&h=350&fit=crop',
-      source: 'France Bleu Normandie',
-      time: '4h',
-      category: 'sports',
-      hasVideo: true,
-      isPersonalized: false
-    },
-    {
-      id: 2,
-      title: language === 'FR'
-        ? "Élections municipales: Les résultats attendus ce soir"
-        : "Municipal elections: Results expected tonight",
-      summary: language === 'FR'
-        ? "Les bureaux de vote ont fermé à 20h. Les premières estimations pour les élections municipales de Rouen sont attendues dans les prochaines heures..."
-        : "Polling stations closed at 8pm. First estimates for Rouen's municipal elections are expected in the coming hours...",
-      image: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=600&h=350&fit=crop',
-      source: 'Le Parisien',
-      time: '1h',
-      category: 'politics',
-      hasVideo: false,
-      isPersonalized: false
-    },
-    {
-      id: 3,
-      title: language === 'FR'
-        ? "Culture: Le Musée des Beaux-Arts dévoile sa nouvelle exposition"
-        : "Culture: Fine Arts Museum unveils new exhibition",
-      summary: language === 'FR'
-        ? "Une exposition exceptionnelle consacrée aux impressionnistes normands ouvrira ses portes ce weekend. Plus de 50 œuvres seront présentées..."
-        : "An exceptional exhibition dedicated to Norman Impressionists will open this weekend. More than 50 works will be presented...",
-      image: 'https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=600&h=350&fit=crop',
-      source: 'Actu.fr',
-      time: '6h',
-      category: 'culture',
-      hasVideo: false,
-      isPersonalized: true
-    },
-    {
-      id: 4,
-      title: language === 'FR'
-        ? "Économie: Nouvelle usine créera 200 emplois à Rouen"
-        : "Economy: New factory will create 200 jobs in Rouen",
-      summary: language === 'FR'
-        ? "Une entreprise spécialisée dans les énergies renouvelables annonce l'ouverture d'une nouvelle usine dans la zone industrielle. Les recrutements débuteront dès janvier..."
-        : "A company specializing in renewable energy announces the opening of a new factory in the industrial zone. Recruitment will begin in January...",
-      image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=600&h=350&fit=crop',
-      source: 'Les Échos',
-      time: '8h',
-      category: 'economy',
-      hasVideo: true,
-      isPersonalized: false
-    },
-    {
-      id: 5,
-      title: language === 'FR'
-        ? "Breaking: Incident majeur sur l'A13, circulation perturbée"
-        : "Breaking: Major incident on A13, traffic disrupted",
-      summary: language === 'FR'
-        ? "Un accident impliquant plusieurs véhicules provoque d'importants embouteillages sur l'A13 en direction de Paris. Les secours sont sur place..."
-        : "An accident involving several vehicles is causing major traffic jams on the A13 towards Paris. Emergency services are on site...",
-      image: 'https://images.unsplash.com/photo-1533092781476-0f31e99f7c8b?w=600&h=350&fit=crop',
-      source: 'Info Trafic',
-      time: '30min',
-      category: 'breaking',
-      hasVideo: true,
-      isPersonalized: false
+  const fetchNews = async (category = 'all', location = 'rouen', pageNum = 1, append = false) => {
+    try {
+      if (!append) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+      setError('');
+      
+      const apiCategory = getApiCategory(category);
+      const language = i18n.language;
+      let response;
+      
+      if (location === 'rouen') {
+        response = await newsService.getRouenNews(apiCategory, language, pageNum, 20);
+      } else if (location === 'normandy') {
+        response = await newsService.getNormandyNews(apiCategory, language, pageNum, 20);
+      } else if (location === 'france') {
+        response = await newsService.getFranceNews(apiCategory, language, pageNum, 20);
+      }
+      
+      if (response && response.articles) {
+        if (append) {
+          setArticles(prev => [...prev, ...response.articles]);
+        } else {
+          setArticles(response.articles);
+        }
+        setHasMore(response.articles.length === 20);
+      } else {
+        if (!append) {
+          setArticles([]);
+        }
+        setHasMore(false);
+      }
+    } catch (err) {
+      console.error('Error fetching news:', err);
+      setError(err.message || 'Failed to fetch news');
+      if (!append) {
+        setArticles([]);
+      }
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
     }
-  ];
-
-  const filteredNews = activeCategory === 'all' 
-    ? newsArticles 
-    : newsArticles.filter(n => n.category === activeCategory);
-
-  const toggleSave = (id) => {
-    setSavedArticles(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const getCatColor = (catId) => categories.find(c => c.id === catId)?.color || colors.accent;
+  useEffect(() => {
+    setPage(1);
+    setHasMore(true);
+    fetchNews(activeCategory, activeLocation, 1, false);
+  }, [activeCategory, activeLocation, i18n.language]);
+
+  useEffect(() => {
+    if (user) {
+      loadSavedArticles();
+    }
+  }, [user]);
+
+  const loadSavedArticles = async () => {
+    try {
+      const saved = await newsService.getSavedArticles();
+      const savedMap = {};
+      saved.forEach(article => {
+        savedMap[article.article_url] = true;
+      });
+      setSavedArticles(savedMap);
+    } catch (err) {
+      console.error('Error loading saved articles:', err);
+    }
+  };
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    
+    try {
+      setLoading(true);
+      setError('');
+      const response = await newsService.searchNews(searchQuery, i18n.language, 1, 20);
+      
+      if (response && response.articles) {
+        setArticles(response.articles);
+        setActiveCategory('all');
+        setPage(1);
+        setHasMore(false);
+      }
+    } catch (err) {
+      console.error('Error searching news:', err);
+      setError(err.message || 'Search failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleSave = async (article) => {
+    if (!user) {
+      alert(i18n.language === 'fr' ? 'Connectez-vous pour enregistrer des articles' : 'Please log in to save articles');
+      return;
+    }
+
+    const articleUrl = article.url;
+    const isCurrentlySaved = savedArticles[articleUrl];
+
+    try {
+      if (isCurrentlySaved) {
+        await newsService.removeSavedArticle(articleUrl);
+        setSavedArticles(prev => {
+          const updated = { ...prev };
+          delete updated[articleUrl];
+          return updated;
+        });
+      } else {
+        const articleData = {
+          article_url: article.url,
+          article_title: article.title,
+          article_image: article.urlToImage || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c',
+          article_source: article.source?.name || 'Unknown',
+        };
+        await newsService.saveArticle(articleData);
+        setSavedArticles(prev => ({ ...prev, [articleUrl]: true }));
+      }
+    } catch (err) {
+      console.error('Error toggling save:', err);
+      alert(i18n.language === 'fr' ? 'Erreur lors de l\'enregistrement' : 'Error saving article');
+    }
+  };
+
+  const handleCategoryChange = (categoryId) => {
+    setActiveCategory(categoryId);
+    setSearchQuery('');
+    setPage(1);
+  };
+
+  const handleLocationChange = (locationId) => {
+    setActiveLocation(locationId);
+    setShowLocationMenu(false);
+    setSearchQuery('');
+    setPage(1);
+  };
+
+  const loadMoreArticles = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchNews(activeCategory, activeLocation, nextPage, true);
+  };
+
+  const currentLocation = locations.find(loc => loc.id === activeLocation);
+
+  const formatTime = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    
+    if (diffMins < 60) return `${diffMins}min`;
+    if (diffHrs < 24) return `${diffHrs}h`;
+    return date.toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US');
+  };
 
   return (
     <Layout>
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: theme.bg,
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-    }}>
-      {/* Header */}
-      <header style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: '60px',
-        backgroundColor: theme.bgCard,
-        borderBottom: `1px solid ${theme.border}`,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 20px',
-        zIndex: 1000
+      <div style={{
+        minHeight: '100vh',
+        backgroundColor: theme.bg,
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        paddingTop: '20px'
       }}>
-        <div style={{
-          fontSize: '24px',
-          fontWeight: 'bold',
-          background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.accent} 100%)`,
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent'
-        }}>
-          City-Buzz
-        </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button onClick={() => setLanguage(language === 'FR' ? 'EN' : 'FR')}
-            style={{ padding: '8px 14px', backgroundColor: theme.bgInput, border: 'none', borderRadius: '16px', color: theme.text, fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
-            {language}
-          </button>
-          <button onClick={() => setIsDark(!isDark)}
-            style={{ width: '40px', height: '40px', backgroundColor: theme.bgInput, border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {isDark ? '☀️' : '🌙'}
-          </button>
-        </div>
-      </header>
-
-      {/* Content */}
-      <div style={{ paddingTop: '80px', maxWidth: '800px', margin: '0 auto', padding: '80px 20px 40px' }}>
-        {/* Title & Search */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-          <h1 style={{ color: theme.text, fontSize: '28px', fontWeight: 'bold', margin: 0 }}>{t.news}</h1>
-          <input
-            type="text"
-            placeholder={t.search}
-            style={{
-              padding: '10px 16px',
-              width: '240px',
-              backgroundColor: theme.bgInput,
-              border: 'none',
-              borderRadius: '24px',
-              color: theme.text,
-              fontSize: '14px',
-              outline: 'none'
-            }}
-          />
-        </div>
-
-        {/* Categories */}
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '24px', overflowX: 'auto', paddingBottom: '8px' }}>
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setActiveCategory(cat.id)}
-              style={{
-                padding: '10px 18px',
-                backgroundColor: activeCategory === cat.id ? colors.primary : theme.bgCard,
-                border: `1px solid ${activeCategory === cat.id ? colors.accent : theme.border}`,
-                borderRadius: '24px',
-                color: activeCategory === cat.id ? colors.accent : theme.text,
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Featured News */}
-        <div style={{ marginBottom: '32px' }}>
-          <h2 style={{ color: theme.text, fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>{t.featured}</h2>
-          <div style={{
-            position: 'relative',
-            borderRadius: '16px',
-            overflow: 'hidden',
-            cursor: 'pointer'
-          }}>
-            <img src={featuredNews.image} alt={featuredNews.title} style={{ width: '100%', height: '320px', objectFit: 'cover' }} />
-            <div style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              padding: '24px',
-              background: 'linear-gradient(transparent, rgba(0,0,0,0.9))'
-            }}>
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                <span style={{
-                  padding: '4px 12px',
-                  backgroundColor: getCatColor(featuredNews.category),
-                  borderRadius: '12px',
-                  color: '#fff',
-                  fontSize: '12px',
-                  fontWeight: '600'
-                }}>
-                  {categories.find(c => c.id === featuredNews.category)?.label}
-                </span>
-              </div>
-              <h3 style={{ color: '#fff', fontSize: '24px', fontWeight: 'bold', margin: '0 0 8px 0' }}>
-                {featuredNews.title}
-              </h3>
-              <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '15px', lineHeight: '1.5', margin: '0 0 12px 0' }}>
-                {featuredNews.summary}
-              </p>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px' }}>
-                  {featuredNews.source} • {featuredNews.time}
-                </span>
-                <button style={{
-                  padding: '10px 20px',
-                  background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.accent} 100%)`,
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '20px 20px 40px' }}>
+          
+          {/* Title & Search */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+            <h1 style={{ color: theme.text, fontSize: '28px', fontWeight: 'bold', margin: 0 }}>{t.news}</h1>
+            <form onSubmit={handleSearch} style={{ display: 'flex', gap: '8px' }}>
+              <input
+                type="text"
+                placeholder={t.search}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  padding: '10px 16px',
+                  width: '240px',
+                  backgroundColor: theme.bgInput,
                   border: 'none',
-                  borderRadius: '8px',
-                  color: '#fff',
+                  borderRadius: '24px',
+                  color: theme.text,
                   fontSize: '14px',
-                  fontWeight: '600',
-                  cursor: 'pointer'
-                }}>
-                  {t.readMore}
-                </button>
-              </div>
-            </div>
+                  outline: 'none'
+                }}
+              />
+            </form>
           </div>
-        </div>
 
-        {/* News Feed */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {filteredNews.map((article) => (
-            <div
-              key={article.id}
-              style={{
-                backgroundColor: theme.bgCard,
-                borderRadius: '12px',
-                border: `1px solid ${theme.border}`,
-                overflow: 'hidden'
-              }}
-            >
-              {/* Personalized Tag */}
-              {article.isPersonalized && (
-                <div style={{
-                  padding: '8px 16px',
-                  backgroundColor: theme.bgHover,
-                  borderBottom: `1px solid ${theme.border}`,
+          {/* Location Dropdown + Categories */}
+          <div style={{ marginBottom: '14px' }}>
+            {/* Location Selector */}
+            <div style={{ marginBottom: '10px', position: 'relative', display: 'inline-block' }}>
+              <button
+                onClick={() => setShowLocationMenu(!showLocationMenu)}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: theme.bgCard,
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: '24px',
+                  color: theme.text,
+                  fontSize: '15px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px'
-                }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.accent} strokeWidth="2">
-                    <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-                  </svg>
-                  <span style={{ color: colors.accent, fontSize: '12px', fontWeight: '600' }}>
-                    {t.basedOnSearch}
-                  </span>
-                </div>
-              )}
-              
-              {/* Article Image/Video */}
-              <div style={{ position: 'relative' }}>
-                <img src={article.image} alt={article.title} style={{ width: '100%', height: '280px', objectFit: 'cover' }} />
-                
-                {/* Category & Video Badge */}
-                <div style={{ position: 'absolute', top: '16px', left: '16px', display: 'flex', gap: '8px' }}>
-                  <span style={{
-                    padding: '6px 14px',
-                    backgroundColor: getCatColor(article.category),
-                    borderRadius: '12px',
-                    color: '#fff',
-                    fontSize: '13px',
-                    fontWeight: '600'
-                  }}>
-                    {categories.find(c => c.id === article.category)?.label}
-                  </span>
-                  {article.hasVideo && (
-                    <span style={{
-                      padding: '6px 14px',
-                      backgroundColor: 'rgba(0,0,0,0.75)',
-                      borderRadius: '12px',
-                      color: '#fff',
-                      fontSize: '13px',
-                      fontWeight: '600',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px'
-                    }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M8 5v14l11-7z" />
-                      </svg>
-                      {t.video}
-                    </span>
-                  )}
-                </div>
-                
-                {/* Play button overlay for videos */}
-                {article.hasVideo && (
+                }}
+              >
+                <span>{currentLocation?.label}</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+
+              {showLocationMenu && (
+                <>
+                  <div 
+                    onClick={() => setShowLocationMenu(false)}
+                    style={{
+                      position: 'fixed',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      zIndex: 999
+                    }}
+                  />
                   <div style={{
                     position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    width: '60px',
-                    height: '60px',
-                    backgroundColor: 'rgba(255,255,255,0.9)',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer'
+                    top: '100%',
+                    left: 0,
+                    marginTop: '8px',
+                    minWidth: '200px',
+                    backgroundColor: theme.bgCard,
+                    border: `1px solid ${theme.border}`,
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                    padding: '8px',
+                    zIndex: 1000
                   }}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill={colors.primary}>
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
+                    {locations.map((loc) => (
+                      <button
+                        key={loc.id}
+                        onClick={() => handleLocationChange(loc.id)}
+                        style={{
+                          width: '100%',
+                          padding: '12px 16px',
+                          backgroundColor: activeLocation === loc.id ? theme.bgHover : 'transparent',
+                          border: 'none',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          fontSize: '15px',
+                          color: theme.text,
+                          fontWeight: activeLocation === loc.id ? '600' : '400',
+                          marginBottom: '4px'
+                        }}
+                        onMouseOver={(e) => {
+                          if (activeLocation !== loc.id) e.currentTarget.style.backgroundColor = theme.bgHover;
+                        }}
+                        onMouseOut={(e) => {
+                          if (activeLocation !== loc.id) e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                      >
+                        <span style={{ fontSize: '20px' }}>{loc.flag}</span>
+                        <span>{loc.label}</span>
+                      </button>
+                    ))}
                   </div>
-                )}
-              </div>
-              
-              {/* Article Content */}
-              <div style={{ padding: '20px' }}>
-                <h3 style={{ color: theme.text, fontSize: '20px', fontWeight: '600', margin: '0 0 10px 0', lineHeight: '1.4' }}>
-                  {article.title}
-                </h3>
-                <p style={{ color: theme.textSecondary, fontSize: '15px', lineHeight: '1.6', margin: '0 0 12px 0' }}>
-                  {article.summary}
-                </p>
-                
-                {/* Source & Time */}
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between',
-                  paddingTop: '12px',
-                  borderTop: `1px solid ${theme.border}`
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={theme.textSecondary} strokeWidth="2">
-                      <path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2.5 2.5 0 00-2.5-2.5H15" />
-                    </svg>
-                    <span style={{ color: theme.textSecondary, fontSize: '13px', fontWeight: '500' }}>
-                      {article.source}
-                    </span>
-                    <span style={{ color: theme.textSecondary, fontSize: '13px' }}>•</span>
-                    <span style={{ color: theme.textSecondary, fontSize: '13px' }}>
-                      {article.time}
-                    </span>
-                  </div>
-                  
-                  {/* Action Buttons */}
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                      onClick={() => toggleSave(article.id)}
-                      style={{
-                        padding: '8px 16px',
-                        backgroundColor: savedArticles[article.id] ? colors.primary : 'transparent',
-                        border: `1px solid ${theme.border}`,
-                        borderRadius: '8px',
-                        color: savedArticles[article.id] ? colors.accent : theme.text,
-                        fontSize: '13px',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px'
-                      }}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill={savedArticles[article.id] ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
-                        <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2v16z" />
-                      </svg>
-                      {t.save}
-                    </button>
-                    <button style={{
-                      padding: '8px 16px',
-                      backgroundColor: 'transparent',
-                      border: `1px solid ${theme.border}`,
-                      borderRadius: '8px',
-                      color: theme.text,
-                      fontSize: '13px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px'
-                    }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="18" cy="5" r="3" />
-                        <circle cx="6" cy="12" r="3" />
-                        <circle cx="18" cy="19" r="3" />
-                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                      </svg>
-                      {t.share}
-                    </button>
-                    <button style={{
-                      padding: '8px 16px',
-                      background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.accent} 100%)`,
-                      border: 'none',
-                      borderRadius: '8px',
-                      color: '#fff',
-                      fontSize: '13px',
-                      fontWeight: '600',
-                      cursor: 'pointer'
-                    }}>
-                      {t.readMore}
-                    </button>
-                  </div>
-                </div>
-              </div>
+                </>
+              )}
             </div>
-          ))}
+
+            {/* Categories */}
+            <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '8px', marginTop: '16px' }}>
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => handleCategoryChange(cat.id)}
+                  style={{
+                    padding: '10px 18px',
+                    backgroundColor: activeCategory === cat.id ? colors.primary : theme.bgCard,
+                    border: `1px solid ${activeCategory === cat.id ? colors.primary : theme.border}`,
+                    borderRadius: '10px',
+                    color: activeCategory === cat.id ? colors.accent : theme.text,
+                    fontSize: '14px',
+                    fontWeight: activeCategory === cat.id ? '700' : '500',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseOver={(e) => {
+                    if (activeCategory !== cat.id) {
+                      e.currentTarget.style.backgroundColor = theme.bgHover;
+                      e.currentTarget.style.borderColor = colors.primary;
+                    }
+                  }}
+                  onMouseOut={(e) => {
+                    if (activeCategory !== cat.id) {
+                      e.currentTarget.style.backgroundColor = theme.bgCard;
+                      e.currentTarget.style.borderColor = theme.border;
+                    }
+                  }}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Error Message */}
+          {error && (
+            <div style={{
+              padding: '16px',
+              backgroundColor: '#fee2e2',
+              color: '#991b1b',
+              borderRadius: '8px',
+              marginBottom: '20px'
+            }}>
+              {t.errorLoading}: {error}
+            </div>
+          )}
+
+          {/* Loading State */}
+          {loading && (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              minHeight: '400px',
+              color: theme.text,
+              fontSize: '18px'
+            }}>
+              {t.loading}
+            </div>
+          )}
+
+          {/* No Articles */}
+          {!loading && articles.length === 0 && (
+            <div style={{
+              textAlign: 'center',
+              padding: '60px 20px',
+              color: theme.textSecondary,
+              fontSize: '16px'
+            }}>
+              {t.noArticles}
+            </div>
+          )}
+
+          {/* Articles */}
+          {!loading && articles.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {articles.map((article, index) => {
+                const articleUrl = article.url;
+                const isSaved = savedArticles[articleUrl];
+                
+                return (
+                  <div
+                    key={`${articleUrl}-${index}`}
+                    style={{
+                      backgroundColor: theme.bgCard,
+                      borderRadius: '5px',
+                      border: `1px solid ${theme.border}`,
+                      overflow: 'visible',
+                    }}
+                  >
+                    <div style={{ position: 'relative' }}>
+                      <img 
+                        src={article.urlToImage || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=600&h=350&fit=crop'} 
+                        alt={article.title} 
+                        style={{  width: '100%', height:'240px',objectFit: 'cover' }}
+                        onError={(e) => e.target.src = 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=600&h=350&fit=crop'}
+                      />
+                    </div>
+                    
+                    <div style={{ padding: '20px' }}>
+                      <h3 style={{ color: theme.text, fontSize: '20px', fontWeight: '600', margin: '0 0 10px 0', lineHeight: '1.4' }}>
+                        {article.title}
+                      </h3>
+                      <p style={{ color: theme.textSecondary, fontSize: '15px', lineHeight: '1.6', margin: '0 0 12px 0' }}>
+                        {article.description || ''}
+                      </p>
+                      
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between',
+                        paddingTop: '12px',
+                        borderTop: `1px solid ${theme.border}`,
+                        flexWrap: 'wrap',
+                        gap: '12px'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={theme.textSecondary} strokeWidth="2">
+                            <path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2.5 2.5 0 00-2.5-2.5H15" />
+                          </svg>
+                          <span style={{ color: theme.textSecondary, fontSize: '13px', fontWeight: '500' }}>
+                            {article.source?.name || 'Source'}
+                          </span>
+                          <span style={{ color: theme.textSecondary, fontSize: '13px' }}>•</span>
+                          <span style={{ color: theme.textSecondary, fontSize: '13px' }}>
+                            {formatTime(article.publishedAt)}
+                          </span>
+                        </div>
+                        
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          {user && (
+                            <button
+                              onClick={() => toggleSave(article)}
+                              style={{
+                                padding: '8px 16px',
+                                backgroundColor: isSaved ? colors.primary : 'transparent',
+                                border: `1px solid ${theme.border}`,
+                                borderRadius: '8px',
+                                color: isSaved ? colors.accent : theme.text,
+                                fontSize: '13px',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px'
+                              }}
+                            >
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+                                <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2v16z" />
+                              </svg>
+                              {isSaved ? t.saved : t.save}
+                            </button>
+                          )}
+                          <a
+                            href={article.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              padding: '8px 16px',
+                              background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.accent} 100%)`,
+                              border: 'none',
+                              borderRadius: '8px',
+                              color: '#fff',
+                              fontSize: '13px',
+                              fontWeight: '600',
+                              cursor: 'pointer',
+                              textDecoration: 'none',
+                              display: 'inline-block'
+                            }}
+                          >
+                            {t.readMore}
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Load More Button */}
+          {!loading && articles.length > 0 && hasMore && (
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              marginTop: '32px',
+              marginBottom: '20px'
+            }}>
+              <button
+                onClick={loadMoreArticles}
+                disabled={loadingMore}
+                style={{
+                  padding: '14px 32px',
+                  background: loadingMore 
+                    ? theme.bgInput 
+                    : `linear-gradient(135deg, ${colors.primary} 0%, ${colors.accent} 100%)`,
+                  border: 'none',
+                  borderRadius: '24px',
+                  color: loadingMore ? theme.textSecondary : '#fff',
+                  fontSize: '15px',
+                  fontWeight: '600',
+                  cursor: loadingMore ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'transform 0.2s ease',
+                }}
+                onMouseOver={(e) => {
+                  if (!loadingMore) e.currentTarget.style.transform = 'scale(1.05)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                {loadingMore ? (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 1s linear infinite' }}>
+                      <polyline points="23 4 23 10 17 10"></polyline>
+                      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                    </svg>
+                    {t.loading}
+                  </>
+                ) : (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                    {t.loadMore}
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* No More Articles */}
+          {!loading && articles.length > 0 && !hasMore && (
+            <div style={{
+              textAlign: 'center',
+              padding: '20px',
+              color: theme.textSecondary,
+              fontSize: '14px',
+              marginTop: '20px'
+            }}>
+              {t.noMore}
+            </div>
+          )}
         </div>
+
+        {/* Spinning animation */}
+        <style>{`
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
-    </div>
     </Layout>
   );
 }

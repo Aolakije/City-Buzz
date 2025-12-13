@@ -141,7 +141,6 @@ export default function Layout({ children }) {
               borderRadius: '10px',
               cursor: 'pointer',
               transition: 'background-color 0.2s ease',
-              borderLeft: activeItem === item.id ? `3px solid ${isDark ? colors.accent : colors.primary}` : '3px solid transparent'
             }}
             onMouseOver={(e) => {
               if (activeItem !== item.id) e.currentTarget.style.backgroundColor = theme.bgHover;
