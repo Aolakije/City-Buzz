@@ -53,8 +53,14 @@ type CookieConfig struct {
 	Secure bool
 }
 
+// NewsAPI configuration - supports multiple providers
 type NewsAPI struct {
-	APIKey string
+	Provider    string // "newsapi" or "newsdata" or "google", etc.
+	APIKey      string // For NewsAPI.org
+	NewsDataKey string // For NewsData.io
+	// Add more API keys as you integrate more providers:
+	// GoogleAPIKey string
+	// BingAPIKey   string
 }
 
 func Load() (*Config, error) {
@@ -97,10 +103,11 @@ func Load() (*Config, error) {
 			Domain: getEnv("COOKIE_DOMAIN", "localhost"),
 			Secure: getEnv("COOKIE_SECURE", "false") == "true",
 		},
-	}
-	// added a NewsAPI configuration
-	config.NewsAPI = NewsAPI{
-		APIKey: getEnv("NEWS_API_KEY", ""),
+		NewsAPI: NewsAPI{
+			Provider:    getEnv("NEWS_PROVIDER", "newsapi"), // Default to newsapi
+			APIKey:      getEnv("NEWS_API_KEY", ""),         // NewsAPI.org key
+			NewsDataKey: getEnv("NEWSDATA_API_KEY", ""),     // NewsData.io key
+		},
 	}
 
 	return config, nil
