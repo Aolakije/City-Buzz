@@ -1,12 +1,12 @@
 package news
 
 import (
+	"log"
 	"strconv"
 
 	"github.com/Aolakije/City-Buzz/internal/models"
 	"github.com/Aolakije/City-Buzz/pkg/utils"
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 )
 
 type Handler struct {
@@ -118,6 +118,7 @@ func (h *Handler) GetFranceNews(c *fiber.Ctx) error {
 
 	news, err := h.service.GetFranceNews(c.Context(), category, language, page, pageSize)
 	if err != nil {
+		log.Println("FRANCE NEWS ERROR:", err)
 		return utils.ErrorResponse(c, fiber.StatusInternalServerError, "Failed to fetch France news")
 	}
 
@@ -156,8 +157,8 @@ func (h *Handler) GetCityNews(c *fiber.Ctx) error {
 
 // SaveArticle handles POST /api/v1/news/save
 func (h *Handler) SaveArticle(c *fiber.Ctx) error {
-	userID, ok := c.Locals("userID").(uuid.UUID)
-	if !ok {
+	userID, err := utils.ParseUUID(c.Locals("userID").(string))
+	if err != nil {
 		return utils.ErrorResponse(c, fiber.StatusUnauthorized, "User not authenticated")
 	}
 
@@ -180,8 +181,8 @@ func (h *Handler) SaveArticle(c *fiber.Ctx) error {
 
 // GetSavedArticles handles GET /api/v1/news/saved
 func (h *Handler) GetSavedArticles(c *fiber.Ctx) error {
-	userID, ok := c.Locals("userID").(uuid.UUID)
-	if !ok {
+	userID, err := utils.ParseUUID(c.Locals("userID").(string))
+	if err != nil {
 		return utils.ErrorResponse(c, fiber.StatusUnauthorized, "User not authenticated")
 	}
 
@@ -195,8 +196,8 @@ func (h *Handler) GetSavedArticles(c *fiber.Ctx) error {
 
 // DeleteSavedArticle handles DELETE /api/v1/news/saved
 func (h *Handler) DeleteSavedArticle(c *fiber.Ctx) error {
-	userID, ok := c.Locals("userID").(uuid.UUID)
-	if !ok {
+	userID, err := utils.ParseUUID(c.Locals("userID").(string))
+	if err != nil {
 		return utils.ErrorResponse(c, fiber.StatusUnauthorized, "User not authenticated")
 	}
 
