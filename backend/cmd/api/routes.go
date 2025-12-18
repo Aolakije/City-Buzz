@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/Aolakije/City-Buzz/internal/auth"
+	"github.com/Aolakije/City-Buzz/internal/event"
 	"github.com/Aolakije/City-Buzz/internal/middleware"
 	"github.com/Aolakije/City-Buzz/internal/news"
 	"github.com/Aolakije/City-Buzz/internal/post"
@@ -35,7 +36,7 @@ func SetupRoutes(app *fiber.App, db *pgxpool.Pool, cfg *config.Config) {
 	authService := auth.NewService(authRepo, cfg)
 	authHandler := auth.NewHandler(authService, cfg)
 
-	//Initialize post module
+	// Initialize post module
 	postRepo := post.NewRepository(db)
 	postService := post.NewService(postRepo)
 	postHandler := post.NewHandler(postService)
@@ -47,6 +48,11 @@ func SetupRoutes(app *fiber.App, db *pgxpool.Pool, cfg *config.Config) {
 		log.Fatalf("Failed to create news service: %v", err)
 	}
 	newsHandler := news.NewHandler(newsService)
+
+	// Initialize event module
+	eventRepo := event.NewRepository(db)
+	eventService := event.NewService(eventRepo, cfg)
+	eventHandler := event.NewHandler(eventService)
 
 	// Health check
 	app.Get("/health", func(c *fiber.Ctx) error {
@@ -84,6 +90,7 @@ func SetupRoutes(app *fiber.App, db *pgxpool.Pool, cfg *config.Config) {
 	// Comment routes (protected)
 	commentRoutes := api.Group("/comments", middleware.AuthMiddleware(cfg))
 	commentRoutes.Delete("/:id", postHandler.DeleteComment)
+
 	// News routes
 	newsRoutes := api.Group("/news")
 
@@ -99,4 +106,28 @@ func SetupRoutes(app *fiber.App, db *pgxpool.Pool, cfg *config.Config) {
 	newsRoutes.Get("/saved", middleware.AuthMiddleware(cfg), newsHandler.GetSavedArticles)
 	newsRoutes.Delete("/saved", middleware.AuthMiddleware(cfg), newsHandler.DeleteSavedArticle)
 
+	// Event routes
+	eventRoutes := api.Group("/events")
+
+	// Public routes
+	eventRoutes.Get("/rouen", eventHandler.GetRouenEvents)
+	eventRoutes.Get("/trending", eventHandler.GetTrendingEvents)
+
+	// Protected specific routes - MUST come before /:id
+	eventRoutes.Get("/my-events", middleware.AuthMiddleware(cfg), eventHandler.GetUserEvents)
+	eventRoutes.Get("/my-rsvps", middleware.AuthMiddleware(cfg), eventHandler.GetUserRSVPs)
+
+	// Public dynamic route
+	eventRoutes.Get("/:id", eventHandler.GetEventByID)
+	eventRoutes.Get("/:id/attendees", eventHandler.GetEventAttendees) // ADD THIS LINE
+
+	// Protected CRUD routes
+	eventRoutes.Post("/", middleware.AuthMiddleware(cfg), eventHandler.CreateEvent)
+	eventRoutes.Put("/:id", middleware.AuthMiddleware(cfg), eventHandler.UpdateEvent)
+	eventRoutes.Delete("/:id", middleware.AuthMiddleware(cfg), eventHandler.DeleteEvent)
+
+	// Protected RSVP routes
+	eventRoutes.Post("/:id/rsvp", middleware.AuthMiddleware(cfg), eventHandler.CreateOrUpdateRSVP)
+	eventRoutes.Delete("/:id/rsvp", middleware.AuthMiddleware(cfg), eventHandler.DeleteRSVP)
+	eventRoutes.Get("/:id/rsvp", middleware.AuthMiddleware(cfg), eventHandler.GetUserRSVP)
 }
