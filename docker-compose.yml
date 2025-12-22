@@ -17,22 +17,31 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - citybuzz_network
+    restart: unless-stopped
 
   # Redis Cache
   redis:
     image: redis:7-alpine
     container_name: CityBuzz_redis
+    command: sh -c "redis-server --requirepass \"$REDIS_PASSWORD\""
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
     environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    env_file:
+      - .env
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "sh", "-c", "redis-cli -a \"$REDIS_PASSWORD\" ping | grep PONG"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - citybuzz_network
+    restart: unless-stopped
 
   # Backend API
   backend:
@@ -43,13 +52,28 @@ services:
     ports:
       - "${PORT}:8080"
     env_file:
-      - ./.env
+      - .env
+    environment:
+      # Explicitly set these to ensure they use service names
+      - DB_HOST=postgres
+      - REDIS_HOST=redis
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      - citybuzz_network
+    restart: unless-stopped
+    volumes:
+      - ./uploads:/app/uploads
 
 volumes:
   postgres_data:
+    driver: local
   redis_data:
+    driver: local
+
+networks:
+  citybuzz_network:
+    driver: bridge
