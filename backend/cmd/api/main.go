@@ -34,7 +34,8 @@ func main() {
 
 	// Initialize Fiber app
 	app := fiber.New(fiber.Config{
-		AppName: "City-Buzz Platform API",
+		AppName:   "City-Buzz Platform API",
+		BodyLimit: 20 * 1024 * 1024, //(allows 10MB uploads)
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			code := fiber.StatusInternalServerError
 			if e, ok := err.(*fiber.Error); ok {
