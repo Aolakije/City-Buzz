@@ -8,7 +8,9 @@ import (
 	"github.com/Aolakije/City-Buzz/internal/middleware"
 	"github.com/Aolakije/City-Buzz/internal/news"
 	"github.com/Aolakije/City-Buzz/internal/post"
+	"github.com/Aolakije/City-Buzz/internal/upload"
 	"github.com/Aolakije/City-Buzz/pkg/config"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -27,9 +29,14 @@ func SetupRoutes(app *fiber.App, db *pgxpool.Pool, cfg *config.Config) {
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     cfg.CORS.FrontendURL,
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
-		AllowHeaders:     "Origin,Content-Type,Accept,Authorization",
-		AllowCredentials: true, // Important for cookies
+		AllowHeaders:     "Origin,Content-Type,Accept,Authorization,Content-Length",
+		AllowCredentials: true,
+		ExposeHeaders:    "Content-Length,Content-Type",
+		MaxAge:           300,
 	}))
+
+	// Static files (for uploaded images)
+	app.Static("/uploads", "./uploads")
 
 	// Initialize auth module
 	authRepo := auth.NewRepository(db)
@@ -53,6 +60,9 @@ func SetupRoutes(app *fiber.App, db *pgxpool.Pool, cfg *config.Config) {
 	eventRepo := event.NewRepository(db)
 	eventService := event.NewService(eventRepo, cfg)
 	eventHandler := event.NewHandler(eventService)
+
+	// Initialize upload handler
+	uploadHandler := upload.NewHandler(cfg)
 
 	// Health check
 	app.Get("/health", func(c *fiber.Ctx) error {
@@ -130,4 +140,8 @@ func SetupRoutes(app *fiber.App, db *pgxpool.Pool, cfg *config.Config) {
 	eventRoutes.Post("/:id/rsvp", middleware.AuthMiddleware(cfg), eventHandler.CreateOrUpdateRSVP)
 	eventRoutes.Delete("/:id/rsvp", middleware.AuthMiddleware(cfg), eventHandler.DeleteRSVP)
 	eventRoutes.Get("/:id/rsvp", middleware.AuthMiddleware(cfg), eventHandler.GetUserRSVP)
+
+	// Upload routes
+	uploadRoutes := api.Group("/upload", middleware.AuthMiddleware(cfg))
+	uploadRoutes.Post("/event-image", uploadHandler.UploadEventImage)
 }
