@@ -49,6 +49,7 @@ func NewService(repo Repository, cfg *config.Config) Service {
 
 func (s *service) CreateEvent(ctx context.Context, req *models.CreateEventRequest, userID uuid.UUID) (*models.Event, error) {
 	event := &models.Event{
+		ID:               uuid.New(),
 		Title:            req.Title,
 		Description:      req.Description,
 		StartDate:        req.StartDate,
