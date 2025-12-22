@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import Layout from '../components/Layout';
+import Layout from '../components/layout';
 import newsService from '../services/news.service';
 import useThemeStore from '../store/themeStore';
 import useAuthStore from '../store/authStore';
@@ -244,7 +244,7 @@ export default function News() {
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         paddingTop: '20px'
       }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '20px 20px 40px' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px 20px 40px' }}>
           
           {/* Title & Search */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
@@ -453,7 +453,7 @@ export default function News() {
                       <img 
                         src={article.urlToImage || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=600&h=350&fit=crop'} 
                         alt={article.title} 
-                        style={{  width: '100%', height:'240px',objectFit: 'cover' }}
+                        style={{  width: '100%', height:'480px',objectFit: 'cover' }}
                         onError={(e) => e.target.src = 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=600&h=350&fit=crop'}
                       />
                     </div>
