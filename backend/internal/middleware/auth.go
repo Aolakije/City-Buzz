@@ -9,6 +9,12 @@ import (
 // AuthMiddleware validates JWT token from httpOnly cookie
 func AuthMiddleware(cfg *config.Config) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+
+		//  Allow CORS preflight requests
+		if c.Method() == fiber.MethodOptions {
+			return c.SendStatus(fiber.StatusOK)
+		}
+
 		// Get token from cookie
 		token := c.Cookies("auth_token")
 		if token == "" {

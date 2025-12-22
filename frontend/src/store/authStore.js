@@ -1,21 +1,70 @@
 import { create } from 'zustand';
 import authService from '../services/auth.service';
 
-const useAuthStore = create((set) => ({
+// Global flags to prevent multiple initializations
+let isInitializing = false;
+let hasInitialized = false;
+
+const useAuthStore = create((set, get) => ({
   user: null,
   isAuthenticated: false,
   isLoading: false,
+  hasCheckedAuth: false,
   error: null,
+
+  // Initialize - check if user is logged in
+  initialize: async () => {
+    // Prevent multiple simultaneous calls
+    if (isInitializing || hasInitialized) {
+      return;
+    }
+
+    isInitializing = true;
+    set({ isLoading: true, error: null });
+
+    try {
+      const res = await authService.getCurrentUser();
+      
+      // Extract user from various possible response structures
+      const user = res.data?.user || res.user || res.data || null;
+      
+      set({
+        user,
+        isAuthenticated: !!user,
+        isLoading: false,
+        hasCheckedAuth: true
+      });
+      
+      hasInitialized = true;
+    } catch (error) {
+      // User not authenticated - this is normal, not an error
+      set({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        hasCheckedAuth: true,
+        error: null // Don't set error for unauthenticated state
+      });
+      
+      hasInitialized = true;
+    } finally {
+      isInitializing = false;
+    }
+  },
 
   // Register user
   register: async (userData) => {
     set({ isLoading: true, error: null });
+    
     try {
-      const data = await authService.register(userData);
+      const res = await authService.register(userData);
       set({ isLoading: false });
-      return data;
+      return res;
     } catch (error) {
-      set({ error: error.message, isLoading: false });
+      set({ 
+        error: error.message, 
+        isLoading: false 
+      });
       throw error;
     }
   },
@@ -23,16 +72,31 @@ const useAuthStore = create((set) => ({
   // Login user
   login: async (credentials) => {
     set({ isLoading: true, error: null });
+    
     try {
-      const data = await authService.login(credentials);
-      set({ 
-        user: data.user, 
-        isAuthenticated: true, 
-        isLoading: false 
+      const res = await authService.login(credentials);
+      
+      // Extract user from response
+      const user = res.data?.user || res.user || res.data || null;
+      
+      if (!user) {
+        throw new Error('User object missing from login response.');
+      }
+
+      set({
+        user,
+        isAuthenticated: true,
+        isLoading: false,
+        hasCheckedAuth: true
       });
-      return data;
+      
+      return res;
     } catch (error) {
-      set({ error: error.message, isLoading: false });
+      set({ 
+        error: error.message, 
+        isLoading: false, 
+        hasCheckedAuth: true 
+      });
       throw error;
     }
   },
@@ -40,43 +104,31 @@ const useAuthStore = create((set) => ({
   // Logout user
   logout: async () => {
     set({ isLoading: true, error: null });
+    
     try {
       await authService.logout();
-      set({ 
-        user: null, 
-        isAuthenticated: false, 
-        isLoading: false 
-      });
-    } catch (error) {
-      set({ error: error.message, isLoading: false });
-      throw error;
-    }
-  },
-
-  // Get current user
-  getCurrentUser: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      const data = await authService.getCurrentUser();
-      set({ 
-        user: data.user, 
-        isAuthenticated: true, 
-        isLoading: false 
-      });
-      return data;
-    } catch (error) {
-      set({ 
-        user: null, 
-        isAuthenticated: false, 
+      
+      set({
+        user: null,
+        isAuthenticated: false,
         isLoading: false,
-        error: error.message 
+        hasCheckedAuth: true
+      });
+      
+      // Reset initialization flags so user can log in again
+      hasInitialized = false;
+      isInitializing = false;
+    } catch (error) {
+      set({ 
+        error: error.message, 
+        isLoading: false 
       });
       throw error;
     }
   },
 
   // Clear error
-  clearError: () => set({ error: null }),
+  clearError: () => set({ error: null })
 }));
 
 export default useAuthStore;

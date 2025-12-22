@@ -9,12 +9,14 @@ import (
 )
 
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
-	Redis    RedisConfig
-	JWT      JWTConfig
-	CORS     CORSConfig
-	Cookie   CookieConfig
+	Server     ServerConfig
+	Database   DatabaseConfig
+	Redis      RedisConfig
+	JWT        JWTConfig
+	CORS       CORSConfig
+	Cookie     CookieConfig
+	NewsAPI    NewsAPI
+	OpenAgenda OpenAgendaConfig
 }
 
 type ServerConfig struct {
@@ -52,8 +54,22 @@ type CookieConfig struct {
 	Secure bool
 }
 
+// NewsAPI configuration - supports multiple providers
+type NewsAPI struct {
+	Provider    string // "newsapi" or "newsdata"
+	APIKey      string // For NewsAPI.org
+	NewsDataKey string // For NewsData.io
+
+}
+
+// OpenAgendaConfig for fetching events from OpenAgenda
+type OpenAgendaConfig struct {
+	APIKey    string
+	AgendaUID string
+	BaseURL   string
+}
+
 func Load() (*Config, error) {
-	// Load .env file if exists
 	godotenv.Load()
 
 	// Parse JWT expiry
@@ -91,6 +107,16 @@ func Load() (*Config, error) {
 		Cookie: CookieConfig{
 			Domain: getEnv("COOKIE_DOMAIN", "localhost"),
 			Secure: getEnv("COOKIE_SECURE", "false") == "true",
+		},
+		NewsAPI: NewsAPI{
+			Provider:    getEnv("NEWS_PROVIDER", "newsapi"),
+			APIKey:      getEnv("NEWS_API_KEY", ""),     // NewsAPI.org key
+			NewsDataKey: getEnv("NEWSDATA_API_KEY", ""), // NewsData.io key
+		},
+		OpenAgenda: OpenAgendaConfig{
+			APIKey:    getEnv("OPENAGENDA_API_KEY", ""),
+			AgendaUID: getEnv("OPENAGENDA_AGENDA_UID", ""),
+			BaseURL:   getEnv("OPENAGENDA_BASE_URL", "https://api.openagenda.com/v2"), // Default OpenAgenda API
 		},
 	}
 

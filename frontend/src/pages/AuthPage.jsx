@@ -1,4 +1,7 @@
 import { useState } from 'react';
+// --- IMPORTANT: Update this path to where you saved the image ---
+import cityBackground from '../components/images/IMG_2639.png';
+// ----------------------------------------------------------------
 
 // use environment variable if missing, use the default localhost URL
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
@@ -7,7 +10,6 @@ export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [isDark, setIsDark] = useState(true);
   const [language, setLanguage] = useState('en');
-  const [confirmMethod, setConfirmMethod] = useState('email');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -38,12 +40,11 @@ export default function AuthPage() {
   };
   
   const theme = {
-    bg: isDark ? '#1a1c2e' : '#f5f5f7',
-    bgCard: isDark ? 'rgba(41, 45, 79, 0.6)' : 'rgba(255, 255, 255, 0.9)',
-    bgInput: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+    bgCard: isDark ? 'rgba(26, 28, 46, 0.75)' : 'rgba(255, 255, 255, 0.75)',
+    bgInput: isDark ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.5)',
     text: isDark ? '#e4e6eb' : '#050505',
     textSecondary: isDark ? '#b0b3b8' : '#65676b',
-    border: isDark ? 'rgba(246, 241, 130, 0.2)' : '#dddfe2'
+    border: isDark ? 'rgba(246, 241, 130, 0.2)' : 'rgba(0, 0, 0, 0.1)'
   };
 
   const translations = {
@@ -82,7 +83,8 @@ export default function AuthPage() {
     backgroundColor: theme.bgInput,
     color: theme.text,
     outline: 'none',
-    boxSizing: 'border-box'
+    boxSizing: 'border-box',
+    backdropFilter: 'blur(5px)'
   };
   
   const labelStyle = {
@@ -90,7 +92,8 @@ export default function AuthPage() {
     marginBottom: '6px',
     fontSize: '14px',
     fontWeight: '500',
-    color: theme.text
+    color: theme.text,
+    textShadow: isDark ? '0 1px 2px rgba(0,0,0,0.5)' : 'none'
   };
 
   const handleLogin = async () => {
@@ -98,13 +101,10 @@ export default function AuthPage() {
     setError('');
     setSuccess('');
 
-
     try {
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
           identifier: loginData.identifier,
@@ -117,14 +117,10 @@ export default function AuthPage() {
       if (!response.ok) {
         throw new Error(data.error || 'Login failed');
       }
-
-      setSuccess('Login successful! Redirecting...');
-      // Store token if returned
       if (data.token) {
         localStorage.setItem('token', data.token);
       }
       
-      // Redirect to main app after 1 second
       setTimeout(() => {
         window.location.href = '/dashboard';
       }, 1000);
@@ -142,21 +138,17 @@ export default function AuthPage() {
     setSuccess('');
 
     try {
-      // Validation
       if (!registerData.firstName || !registerData.lastName || !registerData.username || 
           !registerData.email || !registerData.password || !registerData.gender ||
           !registerData.dateOfBirth.day || !registerData.dateOfBirth.month || !registerData.dateOfBirth.year) {
         throw new Error('Please fill in all fields');
       }
 
-      // Format date of birth
       const dob = `${registerData.dateOfBirth.year}-${registerData.dateOfBirth.month.padStart(2, '0')}-${registerData.dateOfBirth.day.padStart(2, '0')}`;
 
       const response = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
           first_name: registerData.firstName,
@@ -176,7 +168,6 @@ export default function AuthPage() {
       }
 
       setSuccess('Account created successfully! Please login.');
-      // Switch to login tab after 2 seconds
       setTimeout(() => {
         setIsLogin(true);
         setError('');
@@ -193,24 +184,21 @@ export default function AuthPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: isDark 
-        ? `linear-gradient(135deg, #0d0e17 0%, ${colors.primary} 50%, #1a1c2e 100%)`
-        : `linear-gradient(135deg, #f5f5f7 0%, #e8e8ec 50%, #f5f5f7 100%)`,
+      width: '100vw',
       display: 'flex',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      position: 'relative'
+      position: 'relative',
+      // --- UNIFIED BACKGROUND SETUP ---
+      // 1. The image is applied to the whole screen
+      // 2. We use a gradient overlay to ensure text is readable (dark overlay for dark mode, white for light)
+      backgroundImage: isDark 
+        ? `linear-gradient(rgba(13, 14, 23, 0.85), rgba(41, 45, 79, 0.90)), url(${cityBackground})`
+        : `linear-gradient(rgba(245, 245, 247, 0.85), rgba(245, 245, 247, 0.90)), url(${cityBackground})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed', // Keeps image still while scrolling
+      // -------------------------------
     }}>
-      <div style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: isDark 
-          ? `radial-gradient(circle at 30% 50%, rgba(246, 241, 130, 0.08) 0%, transparent 50%)`
-          : 'none',
-        pointerEvents: 'none'
-      }} />
       
       {/* Theme & Language Toggles */}
       <div style={{
@@ -266,16 +254,26 @@ export default function AuthPage() {
         zIndex: 1
       }}>
         <h1 style={{
-          fontSize: '56px',
+          fontSize: '76px',
           fontWeight: 'bold',
-          marginBottom: '20px',
+          marginBottom: 'none',
           color: isDark ? colors.accent : colors.primary,
           textShadow: isDark 
             ? `0 0 30px ${colors.accent}40` 
-            : 'none'
+            : '0 2px 10px rgba(255,255,255,0.5)'
         }}>
           City-Buzz
         </h1>
+        <h3 style={{
+          fontSize: '44px',
+          fontWeight: '500',
+          marginBottom: '5px',
+          marginTop: '-9px',
+          color: theme.text,
+          textShadow: isDark ? '0 2px 10px rgba(0,0,0,0.5)' : 'none'
+        }}>
+        L'effervescence de la ville
+        </h3>
         <p style={{
           fontSize: '18px',
           textAlign: 'center',
@@ -336,9 +334,9 @@ export default function AuthPage() {
         <div style={{
           width: '100%',
           maxWidth: '420px',
-          backgroundColor: 'transparent',
-          borderRadius: '16px',
-          padding: '32px'
+          backdropFilter: 'blur(50px)',
+          WebkitBackdropFilter: 'blur(50px)', // Safari support
+          padding: '32px',
         }}>
           {/* Error/Success Messages */}
           {error && (
@@ -461,6 +459,7 @@ export default function AuthPage() {
                   cursor: loading ? 'not-allowed' : 'pointer',
                   marginBottom: '16px',
                   transition: 'transform 0.2s ease',
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
                 }}>
                 {loading ? 'Loading...' : t.login}
               </button>
@@ -469,7 +468,8 @@ export default function AuthPage() {
                 textAlign: 'center',
                 color: colors.accent,
                 fontSize: '14px',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                textShadow: '0 1px 2px rgba(0,0,0,0.5)'
               }}>
                 {t.forgotPassword}
               </p>
@@ -548,7 +548,8 @@ export default function AuthPage() {
                       borderRadius: '8px',
                       cursor: 'pointer',
                       color: registerData.gender === gender ? colors.accent : theme.text,
-                      fontSize: '13px'
+                      fontSize: '13px',
+                      backdropFilter: 'blur(5px)'
                     }}>
                       {gender}
                       <input 
@@ -613,7 +614,8 @@ export default function AuthPage() {
                   fontWeight: '600',
                   cursor: loading ? 'not-allowed' : 'pointer',
                   marginTop: '16px',
-                  transition: 'transform 0.2s ease'
+                  transition: 'transform 0.2s ease',
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
                 }}>
                 {loading ? 'Creating...' : t.createAccount}
               </button>
